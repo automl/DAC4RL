@@ -1,0 +1,26 @@
+BootStrap: library
+From: ubuntu:20.04
+
+%post
+    apt-get -y update
+    apt-get install -y software-properties-common # For add-apt-repository I think
+    apt-get install -y --no-install-recommends python3
+    apt-get -y install python3.8-dev
+    apt-get -y install locales
+    add-apt-repository universe # For python3-pip I think
+    apt-get install -y python3-pip
+    pip3 install stable-baselines3
+    # pip3 install colour-print
+    # pip3 install
+
+%environment
+    # export LC_ALL=en_US.UTF-8 # Seems to throw an error?
+    export LANG=en_US.UTF-8
+    # export PATH=/usr/games:$PATH
+
+%runscript
+    # echo "AutoML competitions"
+
+%labels
+    Author AutoML group, Universities of Freiburg and Hannover
+    Version v0.0.1
