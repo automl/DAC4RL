@@ -1,5 +1,5 @@
 # DAC4RL
-DAC4RL track of the DAC4AutoML competition at AutoML Conf
+DAC4RL track of the DAC4AutoML competition at AutoML-Conf.
 
 ## Getting Started
 ```
@@ -12,12 +12,19 @@ cd DAC4RL
 ```
 
 ## Sample Submission
-The directory `sample_submission` contains a sample submission with [a sample code file](sample_submission/submission.py) and an optional [`requirements.txt`] which can contain additional Python packages to be installed *during* an evaluation. (#TODO installation time counts towards run time?)
+The directory `sample_submission` contains a sample submission with [a sample code file](sample_submission/submission.py) and an optional [`requirements.txt`](sample_submission/requirements.txt) which can contain additional Python packages to be installed *during* an evaluation. (#TODO installation time counts towards run time?)
 
 The Bash script [`prepare_upload.sh`](https://www.github.com:automl-private/dac4automlcomp/) may be used to package a submission directory into a `.zip` file ready for submission.
 
 ```
-bash prepare_upload sample_submission
+bash prepare_upload.sh sample_submission
+```
+
+## Evaluating Submissions Locally
+[`evaluate_submission.sh`](evaluate_submission.sh) can be used to evaluate submissions in the same way that they would be evaluated on the competition serves. For example, you can execute the following command to evaluate the sample submission in [`sample_submission`](sample_submission):
+
+```
+bash evaluate_submission.sh -d sample_submission/ -f submission.py
 ```
 
 ## Singularity Container

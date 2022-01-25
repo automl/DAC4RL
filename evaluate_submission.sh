@@ -1,4 +1,5 @@
 #!/bin/bash
+# e.g. bash evaluate_submission.sh -d sample_submission/ -f submission.py
 # CLI argument parsing based on: https://stackoverflow.com/a/14203146/11063709
 
 POSITIONAL_ARGS=()
