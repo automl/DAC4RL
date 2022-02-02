@@ -1,10 +1,11 @@
-# from Steven/Goktug's repo import AbstractOptimizer #TODO
+# from Steven/Goktug's repo import AbstractPolicy #TODO
 from dac4automlcomp.run_experiments import run_experiment
 
 
-class RandomOptimizer():
+class RandomPolicy():
     '''
-    #TODO
+    
+    #TODO Flesh out the code below
     '''
 
     def __init__(self,):
@@ -13,7 +14,7 @@ class RandomOptimizer():
         Parameters
         ----------
         """
-        # AbstractOptimizer.__init__(self, api_config)
+        # AbstractPolicy.__init__(self, api_config)
         ...
 
     def act(self,):
@@ -43,5 +44,5 @@ class RandomOptimizer():
         return self
 
 if __name__ == "__main__":
-    obj = RandomOptimizer()
+    obj = RandomPolicy()
     run_experiment(obj) 

@@ -14,11 +14,19 @@ cd DAC4RL
 ## Sample Submission
 The directory `sample_submission` contains a sample submission with [a sample code file](sample_submission/submission.py) and an optional [`requirements.txt`](sample_submission/requirements.txt) which can contain additional Python packages to be installed *during* an evaluation. (#TODO installation time counts towards run time?)
 
-The Bash script [`prepare_upload.sh`](https://www.github.com:automl-private/dac4automlcomp/) may be used to package a submission directory into a `.zip` file ready for submission.
+The Bash script [`prepare_upload.sh`](https://www.github.com:automl-private/dac4automlcomp/) may be used to package a submission directory into a `.zip` file ready for submission to the competition servers.
 
 ```
 bash prepare_upload.sh sample_submission
 ```
+
+To create a submission:
+  * Create a Python file that defines a class that implements the DAC policy. It should subclass [`AbstractPolicy`](#TODO link)
+  * The same Python file should import `AbstractPolicy` and `run_experiment` as done in the sample submission.
+  * The same Python file should be callable as a Python script from the command line. For this, please call `run_experiment` with an object of the policy that you defined above, as done in the sample submission.
+  * Optionally, create a `requirements.txt` with additional Python packages that you would like to be installed
+  * Place the above file(s) in the same directory and run `prepare_upload.sh` with the name of this directory as an argument.
+
 
 ## Evaluating Submissions Locally
 [`evaluate_submission.sh`](evaluate_submission.sh) can be used to evaluate submissions in the same way that they would be evaluated on the competition serves. For example, you can execute the following command to evaluate the sample submission in [`sample_submission`](sample_submission):
