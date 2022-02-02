@@ -36,7 +36,7 @@ bash evaluate_submission.sh -d sample_submission/ -f submission.py
 ```
 
 ## Singularity Container
-To run your experiments in the same runtime environment as the competition servers they will be evaluated on, we provide a [Singularity container](https://sylabs.io/guides/3.5/user-guide/introduction.html).
+To run your experiments in the same runtime environment as the competition servers they will be evaluated on, we provide a [Singularity container](https://sylabs.io/guides/3.5/user-guide/introduction.html). Please see [the Singularity container definition file](dac4rl.def) to see what additional packages will be available in the runtime environment.
 
 The container may either be downloaded from the Container Library:
 ```

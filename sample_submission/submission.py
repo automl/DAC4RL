@@ -4,7 +4,8 @@ from dac4automlcomp.run_experiments import run_experiment
 
 class RandomPolicy():
     '''
-    
+    A policy which sets the configurations randomly at each step of the optimisation.
+
     #TODO Flesh out the code below
     '''
 
@@ -38,9 +39,25 @@ class RandomPolicy():
         pass
 
     def save(self,):
+        """
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        """
         ...
 
     def load(self,):
+        """
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        """
         return self
 
 if __name__ == "__main__":
