@@ -9,6 +9,8 @@ from carl.context.augmentation import add_gaussian_noise
 from carl.context.utils import get_context_bounds
 from carl.training.trial_logger import TrialLogger
 
+import pdb
+import torch as th
 
 
 class CARLEnv(Wrapper):
@@ -39,7 +41,6 @@ class CARLEnv(Wrapper):
         state_context_features: Optional[List[str]] = None,
     ):
         """
-
         Parameters
         ----------
         env: gym.Env
@@ -72,6 +73,7 @@ class CARLEnv(Wrapper):
             If the context is visible to the agent (hide_context=False), the context features are appended to the state.
             state_context_features specifies which of the context features are appended to the state. The default is
             appending all context features.
+
 
         Raises
         ------
@@ -237,7 +239,7 @@ class CARLEnv(Wrapper):
 
         return state
 
-    def step(self, action):
+    def step(self, action) -> Tuple[Any, Any, bool, Dict]:
         """
         Step the environment.
 
@@ -289,6 +291,10 @@ class CARLEnv(Wrapper):
         return state, reward, done, info
 
     def __getattr__(self, name):
+        # TODO: does this work with activated noise? I think we need to update it
+        # We need this because our CARLEnv has underscore class methods which would
+        # through an error otherwise
+
         if name in ["_progress_instance", "_update_context", "_log_context"]:
             return getattr(self, name)
         if name.startswith("_"):
@@ -297,6 +303,8 @@ class CARLEnv(Wrapper):
             )
 
         return getattr(self.env, name)
+
+
 
     def _progress_instance(self):
         """
@@ -428,6 +436,7 @@ class CARLEnv(Wrapper):
                     context_lower_bounds = context_lower_bounds[ids]
                     context_upper_bounds = context_upper_bounds[ids]
 
+
                 low = np.concatenate((env_lower_bounds, context_lower_bounds))
                 high = np.concatenate((env_upper_bounds, context_upper_bounds))
 
@@ -438,6 +447,7 @@ class CARLEnv(Wrapper):
             self.observation_space = (
                 self.env.observation_space
             )  # make sure it is the same object
+
 
     def _update_context(self):
         """

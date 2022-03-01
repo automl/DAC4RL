@@ -71,12 +71,19 @@ class RLEnv(DACEnv):
         device: str = "cpu",
         agent= 'PPO',
         seed = 123456,
-        eval_freq = 500
+        eval_freq = 500, 
+        total_timesteps = 1e6,
+        n_instances = 5,
         
         
     ):
         super().__init__(generator)
         self.device = device
+
+        self.total_timesteps = total_timesteps
+        self.n_instances = n_instances
+
+        self.per_instance_steps = int(total_timesteps/n_instances) 
 
         # TODO Set-up CarlEnv in this argument
     
@@ -221,8 +228,6 @@ class RLEnv(DACEnv):
             ret = (env, eval_env)
         return ret
     
-
-    
     @property
     def observation_space(self):
         if self._observation_space is None:
@@ -246,7 +251,7 @@ class RLEnv(DACEnv):
 
         model_path = os.path.join(self.logger.logdir, "model.zip")
 
-        # Generate hyperpüarams
+        # Generate hyperparams
         hyperparams = self._set_hps(action)
         
         # Create a new model
@@ -255,7 +260,7 @@ class RLEnv(DACEnv):
                             verbose=1, 
                             seed=self.seed, 
                             **hyperparams
-                    )  #
+                    )  
 
         # Load weights if a model has been saved
         if os.path.exists(model_path):
@@ -267,17 +272,18 @@ class RLEnv(DACEnv):
             self.logger.stable_baselines_logger
         )
 
-        # Train
+        # Train for specified timesteps per 
+        # instance
         self.model.learn(
-                total_timesteps=self.steps, 
+                total_timesteps=self.per_instance_steps, 
                 callback=self.callbacks
             )
 
-        #TODO: Figure out a way to get rewards
+        #TODO: Save the rewards as the mean 
 
+
+        # Save the model used in the instance
         self.model.save(model_path)
-
-
 
 
         pass 
@@ -331,3 +337,6 @@ class RLEnv(DACEnv):
         torch.backends.cudnn.benchmark = False
         torch.backends.cudnn.deterministic = True
         return super().seed(seed)
+
+
+
