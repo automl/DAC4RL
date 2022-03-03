@@ -318,9 +318,10 @@ def set_hps(
     schedule_kwargs = None
     # TODO create hyperparameter files for other agents as well, no hardcoding here
     if hp_fn is not None and agent_name == "PPO":
-        hyperparams, env_wrapper, normalize_kwargs = get_hps_from_file(
-            hp_fn=hp_fn, env_name=env_name
-        )
+        # hyperparams, env_wrapper, normalize_kwargs = get_hps_from_file(
+        #     hp_fn=hp_fn, env_name=env_name
+        # )
+        hyperparams["policy"] = "MlpPolicy"
 
     if agent_name == "DDPG":
         hyperparams["policy"] = "MlpPolicy"

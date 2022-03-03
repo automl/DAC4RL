@@ -4,15 +4,14 @@ import numpy as np
 import torch
 from gym import spaces
 
+from stable_baselines3.common.evaluation import evaluate_policy
+
 from dac4automlcomp.dac_env import DACEnv
 from carl.envs import *
 
 from functools import partial
 import os
 import stable_baselines3
-from xvfbwrapper import Xvfb
-import configargparse
-import yaml
 import json
 
 import gym
@@ -66,6 +65,7 @@ class RLEnv(DACEnv):
         generator,
         outdir,
         parser,
+        args,
         env,
 
         device: str = "cpu",
@@ -77,6 +77,23 @@ class RLEnv(DACEnv):
         
         
     ):
+        """
+        RL Env that wraps the CARL environment and specifically allows for dynamnically setting hyperparameters 
+        in a DAC fashion. 
+
+        Args:
+            generator: Generator object that generates the hyperparameter space
+            outdir: Path to the output directory
+            parser: ArgumentParser object that contains the arguments for the experiment
+            env: CARL environment
+            device: Device to use for the agent
+            agent: Agent to use for training
+            seed: Seed for the environment
+            eval_freq: Frequency at which to evaluate the agent
+            total_timesteps: Total number of timesteps to train for
+            n_instances: Number of instances to train for
+        """
+
         super().__init__(generator)
         self.device = device
 
@@ -107,8 +124,7 @@ class RLEnv(DACEnv):
 
 
         # Set contexts
-        self.contexts = {}
-
+        self.contexts = self.get_contexts(args.context_file)
 
 
         # Get training and evaluation environments
@@ -136,14 +152,14 @@ class RLEnv(DACEnv):
         # Handle all calbacks
         eval_callback = EvalCallback(
             self.eval_env,
-            log_path=logger.logdir,
+            log_path=self.logger.logdir,
             eval_freq=1,  # args.eval_freq,
             n_eval_episodes=len(self.contexts),
             deterministic=True,
             render=False,
         )
 
-        callbacks = [eval_callback]
+        self.callbacks = [eval_callback]
         everynstep_callback = EveryNTimesteps(
             n_steps=eval_freq, 
             callback=eval_callback
@@ -151,12 +167,15 @@ class RLEnv(DACEnv):
 
         chkp_cb = CheckpointCallback(
             save_freq=eval_freq, 
-            save_path=os.path.join(logger.logdir, "models")
+            save_path=os.path.join(self.logger.logdir, "models")
         )
-        if callbacks is None:
-            callbacks = [chkp_cb]
+        if self.callbacks is None:
+            self.callbacks = [chkp_cb]
         else:
-            callbacks.append(chkp_cb)
+            self.callbacks.append(chkp_cb)
+
+        # Counter to track instances
+        self.instance_counter = 0
 
     
     def get_env(
@@ -246,26 +265,30 @@ class RLEnv(DACEnv):
 
     def step(self, action: float):
         """
-        Take a step by applying a set of hyperparameters to the model.
+        Take a step by applying a set of hyperparameters to the model,
+        training that model for the per_instance_steps and then evaluating 
+        its metric, which are returned
         """
 
-        model_path = os.path.join(self.logger.logdir, "model.zip")
+        model_path = os.path.join(self.logger.logdir, f"model_instance_{self.instance_counter}.zip")
 
         # Generate hyperparams
         hyperparams = self._set_hps(action)
         
-        # Create a new model
-        self.model = self.agent_cls(
-                            env=self.env, 
-                            verbose=1, 
-                            seed=self.seed, 
-                            **hyperparams
-                    )  
-
-        # Load weights if a model has been saved
+        
+        # Load weights if a model has been saved 
+        # -- The case where we are not at the starting instance
         if os.path.exists(model_path):
             self.model.load(os.path.join(self.logger.logdir, "model.zip"))
-        
+        else:
+            # Create a new model
+            self.model = self.agent_cls(
+                                env=self.env, 
+                                verbose=1, 
+                                seed=self.seed, 
+                                **hyperparams
+                        )  
+
 
         # TODO Check if this is necessary
         self.model.set_logger(
@@ -274,19 +297,34 @@ class RLEnv(DACEnv):
 
         # Train for specified timesteps per 
         # instance
-        self.model.learn(
-                total_timesteps=self.per_instance_steps, 
-                callback=self.callbacks
-            )
+        self.model.learn(total_timesteps=self.per_instance_steps)
 
-        #TODO: Save the rewards as the mean 
 
+        # Evaluate Policy
+        mean_reward, std_reward = evaluate_policy(
+                                        model = self.model, 
+                                        env = self.eval_env, 
+                                        n_eval_episodes=100
+                                        deterministic=True,
+                                        render=False,
+                                    )
 
         # Save the model used in the instance
         self.model.save(model_path)
 
+        if self.instance_counter == self.n_instances:
+            done = True
+        else:
+            done = False
+            self.instance_counter += 1
 
-        pass 
+        # TODO: Add other configurable metrics 
+        # -- What else defines a state? 
+        state = {
+            "step": self.instance_counter,
+        }
+
+        return state, mean_reward, done, {}
 
 
     def _set_hps(self, action: Dict):
@@ -321,7 +359,6 @@ class RLEnv(DACEnv):
             with open(context_file, "r") as file:
                 contexts = json.load(file)
         return contexts
-
 
     def reset(self):
         pass 

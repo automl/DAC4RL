@@ -7,6 +7,8 @@ import pandas as pd
 from stable_baselines3.common.logger import configure
 
 
+## TODO update for DAC
+
 class TrialLogger(object):
     """
     Holds all train arguments and sets up logging directory and stables baselines
@@ -114,7 +116,8 @@ class TrialLogger(object):
         """
         output_file_paths = [str(self.trial_setup_fn)]
         self.parser.write_config_file(
-            parsed_namespace=self.trial_setup_args, output_file_paths=output_file_paths
+            parsed_namespace=self.trial_setup_args, 
+            output_file_paths=output_file_paths
         )
 
     def write_context(self, episode: int, step: int, context: Dict[Any, Any]):
@@ -157,24 +160,3 @@ class TrialLogger(object):
             index=False,
             mode=mode,
         )
-
-    # def write_mico(self, online_dist, target_dist, loss):
-    #     columns = ["Online_Distance", "Target_Distance", "Mico_Loss"]
-    #     values = [online_dist, target_dist, loss]
-    #     df = pd.DataFrame(values).T
-    #     df.columns = columns
-
-    #     write_header = False
-    #     mode = "a"
-    #     if not self.mico_file:
-    #         write_header = True
-    #         mode = "w"
-    #         self.mico_file = True
-
-    #     df.to_csv(
-    #         path_or_buf=self.mico_fn,
-    #         sep=",",
-    #         header=write_header,
-    #         index=False,
-    #         mode=mode
-    #     )
