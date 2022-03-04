@@ -66,10 +66,20 @@ from carl.utils.hyperparameter_processing import preprocess_hyperparams
 # Fixed instance set vs generators 
 # Final state and action spaces
 
-class RLEnv(DACEnv):
+#TODO: if we want to change the center of the context distribution, we need to change the sampling method in CARL
+RLInstance = namedtuple(
+    "RLInstance",
+    [
+        "env_type",
+        "context_features",
+        "context_dist_std",
+    ],
+)
+
+class RLEnv(DACEnv[RLInstance]):
     def __init__(
         self,
-        generator,
+        generator: Generator[RLInstance],
         outdir,
         parser,
         args,
@@ -372,10 +382,14 @@ class RLEnv(DACEnv):
     # The instance already includes
     # - environments
     # - Context distribution for this instance
-    def reset(self):
-        
-        # Set contexts
-        self.contexts = self.get_contexts(args.context_file)
+    def reset(self, instance: Optional[Union[RLInstance, int]] = None):
+        super().reset(instance)
+        self.interval_counter = 0
+        assert isinstance(self.current_instance, RLInstance)
+        (self.env_type, context_features, context_std) = self.current_instance
+
+        # Sample contexts
+        self.contexts = sample_contexts(self.env_type, context_features, default_sample_std_percentage=context_std)
 
 
         # Get training and evaluation environments
