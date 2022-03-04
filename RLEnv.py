@@ -54,10 +54,17 @@ from carl.utils.hyperparameter_processing import preprocess_hyperparams
 
 
 # TODO: 
-# - Integrate steps from an RL DAC agent - instances 
-# - Control number of contexts on which it is trained per instance step
-# - 
- 
+# - Integrate DAC instance
+# - run this whole thing with the DAC instance
+# - Docker containerization (Check if necessary because of Codalab)
+
+
+# NOTE: Design choices to do
+# Context distributions between instances and also at test time
+# Model Saving
+# Training step intervals
+# Fixed instance set vs generators 
+# Final state and action spaces
 
 class RLEnv(DACEnv):
     def __init__(
@@ -73,9 +80,8 @@ class RLEnv(DACEnv):
         seed = 123456,
         eval_freq = 500, 
         total_timesteps = 1e6,
-        n_instances = 5,
-        
-        
+        n_intervals = 5,    # Should be really low for evaluations
+                
     ):
         """
         RL Env that wraps the CARL environment and specifically allows for dynamnically setting hyperparameters 
@@ -98,13 +104,16 @@ class RLEnv(DACEnv):
         self.device = device
 
         self.total_timesteps = total_timesteps
-        self.n_instances = n_instances
+        self.n_intervals = n_intervals
+        self.env_type = env
+        self.seed = seed
+        self.eval_freq = eval_freq
 
-        self.per_instance_steps = int(total_timesteps/n_instances) 
+        self.per_interval_steps = int(total_timesteps/n_intervals) 
 
         # TODO Set-up CarlEnv in this argument
     
-        # set up logger
+        # set up logger TODO check if required for tracking reward history
         self.logger = TrialLogger(
             outdir,
             parser=parser,
@@ -115,67 +124,33 @@ class RLEnv(DACEnv):
     
         # Get the agent class
         try:
-            agent_cls = eval(agent)
+            self.agent_cls = eval(agent)
 
         except ValueError:
             print(
                 f"{agent} is an unknown agent class. Please use a classname from stable baselines 3"
             )
 
-
-        # Set contexts
-        self.contexts = self.get_contexts(args.context_file)
-
-
-        # Get training and evaluation environments
-        env_kwargs = dict(
-            contexts=self.contexts,
-            logger=None,
-            hide_context=False,
-            state_context_features="changing_context_features", # Only the features that change are appended to the state
-        )
-
-
-        self.env, self.eval_env = self.get_env(
-            env_name=env,
-            n_envs=1,
-            env_kwargs=env_kwargs,
-            wrapper_class=None,
-            vec_env_cls=DummyVecEnv,
-            return_eval_env=True,
-            normalize_kwargs=None,
-            agent_cls=agent_cls,
-            eval_seed=seed,
-        )
-
         
-        # Handle all calbacks
-        eval_callback = EvalCallback(
-            self.eval_env,
-            log_path=self.logger.logdir,
-            eval_freq=1,  # args.eval_freq,
-            n_eval_episodes=len(self.contexts),
-            deterministic=True,
-            render=False,
-        )
+        # Check which callbacks are needed for tracking reward history
+        # eval_callback = EvalCallback(
+        #     self.eval_env,
+        #     log_path=self.logger.logdir,
+        #     eval_freq=1,  # args.eval_freq,
+        #     n_eval_episodes=len(self.contexts),
+        #     deterministic=True,
+        #     render=False,
+        # )
 
-        self.callbacks = [eval_callback]
-        everynstep_callback = EveryNTimesteps(
-            n_steps=eval_freq, 
-            callback=eval_callback
-        )
+        # self.callbacks = [eval_callback]
+        # everynstep_callback = EveryNTimesteps(
+        #     n_steps=eval_freq, 
+        #     callback=eval_callback
+        # )
 
-        chkp_cb = CheckpointCallback(
-            save_freq=eval_freq, 
-            save_path=os.path.join(self.logger.logdir, "models")
-        )
-        if self.callbacks is None:
-            self.callbacks = [chkp_cb]
-        else:
-            self.callbacks.append(chkp_cb)
 
         # Counter to track instances
-        self.instance_counter = 0
+        self.interval_counter = 0
 
     
     def get_env(
@@ -282,6 +257,9 @@ class RLEnv(DACEnv):
             self.model.load(os.path.join(self.logger.logdir, "model.zip"))
         else:
             # Create a new model
+            # TODO agente class should be iun hyperparams, so just ensure 
+            # if this part is not needed
+            # TODO Remove algorithm key form the hyperparams 
             self.model = self.agent_cls(
                                 env=self.env, 
                                 verbose=1, 
@@ -290,14 +268,13 @@ class RLEnv(DACEnv):
                         )  
 
 
-        # TODO Check if this is necessary
+        # TODO Check if this is necessary, if not for training performance
         self.model.set_logger(
             self.logger.stable_baselines_logger
         )
 
-        # Train for specified timesteps per 
-        # instance
-        self.model.learn(total_timesteps=self.per_instance_steps)
+        # Train for specified timesteps per interval
+        self.model.learn(total_timesteps=self.per_interval_steps)
 
 
         # Evaluate Policy
@@ -310,36 +287,66 @@ class RLEnv(DACEnv):
                                     )
 
         # Save the model used in the instance
+        # TODO Change if we have too many intervals -- save every certain steps
         self.model.save(model_path)
 
-        if self.instance_counter == self.n_instances:
+
+        if self.interval_counter == self.n_intervals:
             done = True
         else:
             done = False
-            self.instance_counter += 1
+            self.interval_counter += 1
 
         # TODO: Add other configurable metrics 
-        # -- What else defines a state? 
+        # -- What else defines a state?
+        # -- Return the whole DAC instance 
+        # -- Training Reward history : TODO check how to get it easily from the logger
         state = {
             "step": self.instance_counter,
+            "std_reward" : std_reward,
+            'training_reward_histoy': None,
+            'Instance': None
         }
 
         return state, mean_reward, done, {}
 
 
+    # TODO check if the kwargs make sense for the algorithm
+    # Policy Architecture keeps to default
     def _set_hps(self, action: Dict):
-        
-        hyperparams = {}
-        env_wrapper = None
-        normalize_kwargs = None
-        schedule_kwargs = None
+        """
+        Set the hyperparameters based on the action 
 
+        Args:
+            action: Dict of hyperparameters
+                    - Algorithm
+                    - Learning Rate
+                    - Discount Factor
+                    - Tau
+                    - Action Noise
+                    - GAE Lambda
+                    - Replay Buffer Size
+                    - Replay buffer Class
+                    - Entropy coefficient
+                    - Value Function Coefficients
+                    - Clip Coefficient
+        """
+        action = {
+            "algorithm": "PPO",
+            "lr": 0.0003,
+            "gamma": 0.99,
+            "gae_lambda": 0.95,
+            "value_loss_coef": 0.5,
+            "entropy_coef": 0.01,
+            "clip_range": 0.2,
+        }
+
+
+
+        hyperparams = action
         hyperparams["policy"] = "MlpPolicy"
-
-
-
         
-        pass
+        return hyperparams
        
     def get_contexts(self, context_file: None):
         """
@@ -360,15 +367,40 @@ class RLEnv(DACEnv):
                 contexts = json.load(file)
         return contexts
 
+    
+    # TODO Change the DAC instance in this function
+    # The instance already includes
+    # - environments
+    # - Context distribution for this instance
     def reset(self):
+        
+        # Set contexts
+        self.contexts = self.get_contexts(args.context_file)
+
+
+        # Get training and evaluation environments
+        self.env_kwargs = dict(
+            contexts=self.contexts,
+            logger=None,
+            hide_context=False,
+            state_context_features="changing_context_features", # Only the features that change are appended to the state
+        )
+        
+        
+        self.env, self.eval_env = self.get_env(
+            env_name=self.env,
+            n_envs=1,
+            env_kwargs=self.env_kwargs,
+            wrapper_class=None,
+            vec_env_cls=DummyVecEnv,
+            return_eval_env=True,
+            normalize_kwargs=None,
+            agent_cls=self.agent_cls,
+            eval_seed=self.seed,
+        )
+
         pass 
 
-        # return {
-        #     "step": 0,
-        #     "loss": loss,
-        #     "validation_loss": None,
-        #     "crashed": False,
-        # }
 
     def seed(self, seed=None):
         torch.backends.cudnn.benchmark = False
