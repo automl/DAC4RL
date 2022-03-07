@@ -20,18 +20,14 @@ import inspect
 
 from typing import Dict, Union, Optional, Type, Callable, Tuple
 
+from dac4automlcomp.generator import Generator, GeneratorIterator, InstanceType
+
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 parentdir = os.path.dirname(currentdir)
 sys.path.insert(0, parentdir)
 print(os.getcwd())
 
 from stable_baselines3.common.env_util import make_vec_env
-from stable_baselines3.common.callbacks import (
-    EvalCallback,
-    EveryNTimesteps,
-    CheckpointCallback,
-)
-
 from stable_baselines3.common.vec_env.vec_normalize import VecNormalize
 from stable_baselines3.common.vec_env import SubprocVecEnv, DummyVecEnv
 from stable_baselines3 import DDPG, PPO, SAC
@@ -52,11 +48,15 @@ from carl.training.trial_logger import TrialLogger
 from carl.context.sampling import sample_contexts
 from carl.utils.hyperparameter_processing import preprocess_hyperparams
 
+from collections import namedtuple
+from dataclasses import dataclass, InitVar
+
+from ConfigSpace.hyperparameters import CategoricalHyperparameter, \
+                                        UniformFloatHyperparameter, Hyperparameter
+
 
 # TODO: 
-# - Integrate DAC instance
 # - run this whole thing with the DAC instance
-# - Docker containerization (Check if necessary because of Codalab)
 
 
 # NOTE: Design choices to do
@@ -66,7 +66,8 @@ from carl.utils.hyperparameter_processing import preprocess_hyperparams
 # Fixed instance set vs generators 
 # Final state and action spaces
 
-#TODO: if we want to change the center of the context distribution, we need to change the sampling method in CARL
+#TODO: if we want to change the center of the context distribution, 
+# we need to change the sampling method in CARL
 RLInstance = namedtuple(
     "RLInstance",
     [
@@ -184,22 +185,6 @@ class RLEnv(DACEnv[RLInstance]):
                 f"{agent} is an unknown agent class. Please use a classname from stable baselines 3"
             )
 
-        
-        # Check which callbacks are needed for tracking reward history
-        # eval_callback = EvalCallback(
-        #     self.eval_env,
-        #     log_path=self.logger.logdir,
-        #     eval_freq=1,  # args.eval_freq,
-        #     n_eval_episodes=len(self.contexts),
-        #     deterministic=True,
-        #     render=False,
-        # )
-
-        # self.callbacks = [eval_callback]
-        # everynstep_callback = EveryNTimesteps(
-        #     n_steps=eval_freq, 
-        #     callback=eval_callback
-        # )
 
 
         # Counter to track instances
@@ -298,7 +283,10 @@ class RLEnv(DACEnv[RLInstance]):
         its metric, which are returned
         """
 
-        model_path = os.path.join(self.logger.logdir, f"model_instance_{self.instance_counter}.zip")
+        model_path = os.path.join(
+                            self.logger.logdir, 
+                            f"model_instance_{self.instance_counter}.zip"
+                        )
 
         # Generate hyperparams
         hyperparams = self._set_hps(action)
@@ -330,11 +318,11 @@ class RLEnv(DACEnv[RLInstance]):
         self.model.learn(total_timesteps=self.per_interval_steps)
 
 
-        # Evaluate Policy
+        # Evaluate Policy for 100 episodes
         mean_reward, std_reward = evaluate_policy(
                                         model = self.model, 
                                         env = self.eval_env, 
-                                        n_eval_episodes=100
+                                        n_eval_episodes=100,
                                         deterministic=True,
                                         render=False,
                                     )
@@ -363,7 +351,6 @@ class RLEnv(DACEnv[RLInstance]):
 
         return state, mean_reward, done, {}
 
-
     # TODO check if the kwargs make sense for the algorithm
     # Policy Architecture keeps to default
     def _set_hps(self, action: Dict):
@@ -371,7 +358,7 @@ class RLEnv(DACEnv[RLInstance]):
         Set the hyperparameters based on the action 
 
         Args:
-            action: Dict of hyperparameters
+            action: Dict of hyperparameters (Exhaustive list for all algorithms)
                     - Algorithm
                     - Learning Rate
                     - Discount Factor
@@ -393,8 +380,6 @@ class RLEnv(DACEnv[RLInstance]):
             "entropy_coef": 0.01,
             "clip_range": 0.2,
         }
-
-
 
         hyperparams = action
         hyperparams["policy"] = "MlpPolicy"
@@ -420,19 +405,33 @@ class RLEnv(DACEnv[RLInstance]):
                 contexts = json.load(file)
         return contexts
 
-    
-    # TODO Change the DAC instance in this function
-    # The instance already includes
-    # - environments
-    # - Context distribution for this instance
-    def reset(self, instance: Optional[Union[RLInstance, int]] = None):
+    def reset(
+        self, 
+        instance: Optional[Union[RLInstance, int]] = None
+    ):
+        """
+        Reset the Instance
+
+        Args:
+            instance:   The instance to reset, which already includes environment and 
+                        Context distribution for this instance
+
+
+        """
         super().reset(instance)
         self.interval_counter = 0
+        
         assert isinstance(self.current_instance, RLInstance)
+        
         (self.env_type, context_features, context_std) = self.current_instance
 
         # Sample contexts
-        self.contexts = sample_contexts(self.env_type, context_features, default_sample_std_percentage=context_std)
+        self.contexts = sample_contexts(
+                            env_name=self.env_type, 
+                            context_feature_args= context_features, 
+                            num_contexts=self.num_contexts,
+                            default_sample_std_percentage=context_std
+                        )
 
 
         # Get training and evaluation environments
@@ -455,11 +454,12 @@ class RLEnv(DACEnv[RLInstance]):
             agent_cls=self.agent_cls,
             eval_seed=self.seed,
         )
-
-        pass 
-
+ 
 
     def seed(self, seed=None):
+        """
+        Standardize seeds
+        """
         torch.backends.cudnn.benchmark = False
         torch.backends.cudnn.deterministic = True
         return super().seed(seed)
