@@ -1,8 +1,0 @@
-{
-	"hyperparameters": {
-		"policy": "MlpPolicy"
-	},
-	"env_wrapper": null,
-	"normalize_kwargs": null,
-	"schedule_kwargs": null
-}

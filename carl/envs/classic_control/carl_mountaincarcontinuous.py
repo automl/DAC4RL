@@ -7,8 +7,6 @@ import gym.envs.classic_control as gccenvs
 from carl.envs.carl_env import CARLEnv
 from carl.training.trial_logger import TrialLogger
 
-from carl.context_encoders import *
-
 DEFAULT_CONTEXT = {
     "min_position": -1.2,
     "max_position": 0.6,
@@ -77,7 +75,6 @@ class CARLMountainCarContinuousEnv(CARLEnv):
         default_context: Optional[Dict] = DEFAULT_CONTEXT,
         max_episode_length: int = 999,  # from https://github.com/openai/gym/blob/master/gym/envs/__init__.py
         state_context_features: Optional[List[str]] = None,
-        context_encoder: Optional[ContextAE()] = None,
     ):
         """
 
@@ -103,7 +100,6 @@ class CARLMountainCarContinuousEnv(CARLEnv):
             default_context=default_context,
             max_episode_length=max_episode_length,
             state_context_features=state_context_features,
-            context_encoder=context_encoder,
         )
         self.whitelist_gaussian_noise = list(
             DEFAULT_CONTEXT.keys()
