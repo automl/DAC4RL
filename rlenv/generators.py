@@ -9,6 +9,8 @@ from dac4automlcomp.generator import Generator
 
 from carl.envs import *
 
+import torch 
+import numpy as np
 #TODO: if we want to change the center of the context distribution, 
 # we need to change the sampling method in CARL
 RLInstance = namedtuple(
@@ -49,7 +51,7 @@ class DefaultRLGenerator(Generator[RLInstance]):
 
     def __post_init__(self, *args):
         self.cs = ConfigurationSpace()
-        self.cs.add_hyperparameters(args)
+        #self.cs.add_hyperparameters(args)
 
     def random_instance(self, rng):
         default_rng_state = torch.get_rng_state()

@@ -62,7 +62,6 @@ from rlenv.generators import DefaultRLGenerator, RLInstance
 # Context distributions between instances and also at test time
 # Model Saving
 # Training step intervals
-# Fixed instance set vs generators 
 # Final state and action spaces
 
 
@@ -80,7 +79,7 @@ class RLEnv(DACEnv[RLInstance], instance_type=RLInstance):
         seed = 123456,
         eval_freq = 500, 
         total_timesteps = 1e6,
-        n_intervals = 5,    # Should be really low for evaluations
+        n_intervals = 20,    # Should be really low for evaluations
                 
     ):
         """
@@ -130,8 +129,6 @@ class RLEnv(DACEnv[RLInstance], instance_type=RLInstance):
                 f"{agent} is an unknown agent class. Please use a classname from stable baselines 3"
             )
 
-
-
         # Counter to track instances
         self.interval_counter = 0
 
@@ -149,7 +146,6 @@ class RLEnv(DACEnv[RLInstance], instance_type=RLInstance):
         return_vec_env: bool = True,
         vec_env_cls: Optional[Type[Union[DummyVecEnv, SubprocVecEnv]]] = None,
         return_eval_env: bool = False,
-        context_encoder: Optional[th.nn.Module] = None,
     ) -> Union[CARLEnv, Tuple[CARLEnv]]:
         if wrapper_kwargs is None:
             wrapper_kwargs = {}
