@@ -20,7 +20,7 @@ import inspect
 
 from typing import Dict, Union, Optional, Type, Callable, Tuple
 
-from dac4automlcomp.generator import Generator, GeneratorIterator, InstanceType
+from dac4automlcomp.generator import Generator
 
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 parentdir = os.path.dirname(currentdir)
@@ -54,6 +54,8 @@ from dataclasses import dataclass, InitVar
 from ConfigSpace.hyperparameters import CategoricalHyperparameter, \
                                         UniformFloatHyperparameter, Hyperparameter
 
+from ConfigSpace import ConfigurationSpace
+
 
 # TODO: 
 # - run this whole thing with the DAC instance
@@ -79,18 +81,26 @@ RLInstance = namedtuple(
 
 @dataclass
 class DefaultRLGenerator(Generator[RLInstance]):
-    env_type: InitVar[Hyperparameter] = CategoricalHyperparameter("env_type", choices=[CARLPendulumEnv, CARLAcrobotEnv, CARLMountainCarContinuousEnv, CARLLunarLanderEnv])
+    env_type: InitVar[Hyperparameter] = CategoricalHyperparameter(
+                                            "env_type", 
+                                            choices=[
+                                                CARLPendulumEnv, 
+                                                CARLAcrobotEnv, 
+                                                CARLMountainCarContinuousEnv, 
+                                                CARLLunarLanderEnv
+                                            ]
+                                        )
     context_features_pendulum: InitVar[Hyperparameter] = CategoricalHyperparameter(
-        "context_features", choices=[]
+        "context_features", choices=[1, 2]
     )
     context_features_acrobot: InitVar[Hyperparameter] = CategoricalHyperparameter(
-        "context_features", choices=[]
+        "context_features", choices=[1,2]
     )
     context_features_mountaincar: InitVar[Hyperparameter] = CategoricalHyperparameter(
-        "context_features", choices=[]
+        "context_features", choices=[1,2]
     )
     context_features_lunarlander: InitVar[Hyperparameter] = CategoricalHyperparameter(
-        "context_features", choices=[]
+        "context_features", choices=[1,2]
     )
     context_dist_std: InitVar[Hyperparameter] = UniformFloatHyperparameter(
         "context_dist_std", 0.01, 0.99, log=True, default_value=0.1
@@ -117,7 +127,11 @@ class DefaultRLGenerator(Generator[RLInstance]):
         else:
             features = config.context_features_lunarlander
         torch.set_rng_state(default_rng_state)
-        return RLInstance(config.env_type, features, config.context_dist_std)
+        return RLInstance(
+                    config.env_type, 
+                    features, 
+                    config.context_dist_std
+                )
 
 
 class RLEnv(DACEnv[RLInstance]):
@@ -272,8 +286,8 @@ class RLEnv(DACEnv[RLInstance]):
             )
         return self._observation_space
 
-    @DACEnv.get_instance.register
-    def _(self, instance):
+    @DACEnv._to_instance.register
+    def _(self, instance: RLInstance):
         return instance
 
     def step(self, action: float):
