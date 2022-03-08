@@ -51,10 +51,7 @@ from carl.utils.hyperparameter_processing import preprocess_hyperparams
 from collections import namedtuple
 from dataclasses import dataclass, InitVar
 
-from ConfigSpace.hyperparameters import CategoricalHyperparameter, \
-                                        UniformFloatHyperparameter, Hyperparameter
-
-from ConfigSpace import ConfigurationSpace
+from rlenv.generators import DefaultRLGenerator, RLInstance
 
 
 # TODO: 
@@ -68,81 +65,16 @@ from ConfigSpace import ConfigurationSpace
 # Fixed instance set vs generators 
 # Final state and action spaces
 
-#TODO: if we want to change the center of the context distribution, 
-# we need to change the sampling method in CARL
-RLInstance = namedtuple(
-    "RLInstance",
-    [
-        "env_type",
-        "context_features",
-        "context_dist_std",
-    ],
-)
-
-@dataclass
-class DefaultRLGenerator(Generator[RLInstance]):
-    env_type: InitVar[Hyperparameter] = CategoricalHyperparameter(
-                                            "env_type", 
-                                            choices=[
-                                                CARLPendulumEnv, 
-                                                CARLAcrobotEnv, 
-                                                CARLMountainCarContinuousEnv, 
-                                                CARLLunarLanderEnv
-                                            ]
-                                        )
-    context_features_pendulum: InitVar[Hyperparameter] = CategoricalHyperparameter(
-        "context_features", choices=[1, 2]
-    )
-    context_features_acrobot: InitVar[Hyperparameter] = CategoricalHyperparameter(
-        "context_features", choices=[1,2]
-    )
-    context_features_mountaincar: InitVar[Hyperparameter] = CategoricalHyperparameter(
-        "context_features", choices=[1,2]
-    )
-    context_features_lunarlander: InitVar[Hyperparameter] = CategoricalHyperparameter(
-        "context_features", choices=[1,2]
-    )
-    context_dist_std: InitVar[Hyperparameter] = UniformFloatHyperparameter(
-        "context_dist_std", 0.01, 0.99, log=True, default_value=0.1
-    )
-
-    def __post_init__(self, *args):
-        self.cs = ConfigurationSpace()
-        self.cs.add_hyperparameters(args)
-
-    def random_instance(self, rng):
-        default_rng_state = torch.get_rng_state()
-        seed = rng.randint(1, 4294967295, dtype=np.int64)
-        self.cs.seed(seed)
-        torch.manual_seed(seed)
-        torch.cuda.manual_seed(seed)
-        torch.cuda.manual_seed_all(seed)
-        config = self.cs.sample_configuration()
-        if config.env_type == CARLPendulumEnv:
-            features = config.context_features_pendulum
-        elif config.env_type == CARLMountainCarContinuousEnv:
-            features = config.context_features_mountaincar
-        elif config.env_type == CARLAcrobotEnv:
-            features = config.context_features_acrobot
-        else:
-            features = config.context_features_lunarlander
-        torch.set_rng_state(default_rng_state)
-        return RLInstance(
-                    config.env_type, 
-                    features, 
-                    config.context_dist_std
-                )
-
 
 class RLEnv(DACEnv[RLInstance], instance_type=RLInstance):
     def __init__(
         self,
-        generator: Generator[RLInstance],
-        outdir,
-        parser,
-        args,
         env,
-
+        generator: Generator[RLInstance] = DefaultRLGenerator(),
+        # outdir='/tmp/RL_test',
+        # parser,
+        # args,
+        
         device: str = "cpu",
         agent= 'PPO',
         seed = 123456,
@@ -179,16 +111,15 @@ class RLEnv(DACEnv[RLInstance], instance_type=RLInstance):
 
         self.per_interval_steps = int(total_timesteps/n_intervals) 
 
-        # TODO Set-up CarlEnv in this argument
     
         # set up logger TODO check if required for tracking reward history
-        self.logger = TrialLogger(
-            outdir,
-            parser=parser,
-            trial_setup_args=args,
-            add_context_feature_names_to_logdir=False,
-            init_sb3_tensorboard=False,  # set to False if using SubprocVecEnv
-        )
+        # self.logger = TrialLogger(
+        #     outdir,
+        #     parser=parser,
+        #     trial_setup_args=args,
+        #     add_context_feature_names_to_logdir=False,
+        #     init_sb3_tensorboard=False,  # set to False if using SubprocVecEnv
+        # )
     
         # Get the agent class
         try:
@@ -324,9 +255,9 @@ class RLEnv(DACEnv[RLInstance], instance_type=RLInstance):
 
 
         # TODO Check if this is necessary, if not for training performance
-        self.model.set_logger(
-            self.logger.stable_baselines_logger
-        )
+        # self.model.set_logger(
+        #     self.logger.stable_baselines_logger
+        # )
 
         # Train for specified timesteps per interval
         self.model.learn(total_timesteps=self.per_interval_steps)
@@ -352,14 +283,10 @@ class RLEnv(DACEnv[RLInstance], instance_type=RLInstance):
             done = False
             self.interval_counter += 1
 
-        # TODO: Add other configurable metrics 
-        # -- What else defines a state?
-        # -- Return the whole DAC instance 
-        # -- Training Reward history : TODO check how to get it easily from the logger
+        # TODO Check if reward history is required
         state = {
             "step": self.instance_counter,
             "std_reward" : std_reward,
-            'training_reward_histoy': None,
             'Instance': None
         }
 

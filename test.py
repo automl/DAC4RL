@@ -1,3 +1,6 @@
 from rlenv.RLEnv import RLEnv
 
-rle = RLEnv()
+from carl.envs import* 
+
+
+rle = RLEnv(CARLPendulumEnv)
