@@ -55,14 +55,13 @@ from rlenv.generators import DefaultRLGenerator, RLInstance
 
 
 # TODO: 
-# - run this whole thing with the DAC instance
+# - Control the number of contexts sampled per instance
+# - Control the distribution of contexts in the generator
 
 
 # NOTE: Design choices to do
-# Context distributions between instances and also at test time
-# Model Saving
 # Training step intervals
-# Final state and action spaces
+# Rewar histories in different states 
 
 
 class RLEnv(DACEnv[RLInstance], instance_type=RLInstance):
@@ -292,15 +291,6 @@ class RLEnv(DACEnv[RLInstance], instance_type=RLInstance):
                     - Value Function Coefficients
                     - Clip Coefficient
         """
-        # action = {
-        #     "algorithm": "PPO",
-        #     "lr": 0.0003,
-        #     "gamma": 0.99,
-        #     "gae_lambda": 0.95,
-        #     "value_loss_coef": 0.5,
-        #     "entropy_coef": 0.01,
-        #     "clip_range": 0.2,
-        # }
 
         hyperparams = action
         hyperparams["policy"] = "MlpPolicy"
@@ -337,8 +327,6 @@ class RLEnv(DACEnv[RLInstance], instance_type=RLInstance):
                             num_contexts=100,
                             default_sample_std_percentage=context_std
                         )
-        
-
 
         # Get training and evaluation environments
         self.env_kwargs = dict(

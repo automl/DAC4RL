@@ -34,7 +34,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 setup(
     name="rl_env",
     version="0.0.1",
-    package_dir={'carl': 'carl/'},
+    package_dir={'carl': 'carl'},
     author=AUTHORS,
     author_email=AUTHOR_EMAIL,
     description="A python package for the DAC4RL competition",
