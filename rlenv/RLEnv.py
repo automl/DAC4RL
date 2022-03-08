@@ -402,4 +402,7 @@ class RLEnv(DACEnv[RLInstance], instance_type=RLInstance):
         return super().seed(seed)
 
 
+if __name__ == "__main__":
+    rle = gym.make("rl-v0", env=CARLPendulumEnv)
+    print(f'Ive got the magic')
 

@@ -1,8 +1,9 @@
 # from Steven/Goktug's repo import AbstractPolicy #TODO
 from dac4automlcomp.run_experiments import run_experiment
 
+from dac4automlcomp.policy import DACPolicy, DeterministicPolicy
 
-class RandomPolicy():
+class BasePolicy(DACPolicy):
     '''
     A policy which sets the configurations randomly at each step of the optimisation.
 
