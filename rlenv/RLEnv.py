@@ -264,7 +264,7 @@ class RLEnv(DACEnv[RLInstance], instance_type=RLInstance):
 
         # TODO Check if reward history is required
         state = {
-            "step": self.instance_counter,
+            "step": self.interval_counter,
             "std_reward" : std_reward,
             'Instance': None
         }
@@ -360,7 +360,7 @@ class RLEnv(DACEnv[RLInstance], instance_type=RLInstance):
 
 
 if __name__ == "__main__":
-    env = gym.make("dac4carl-v0", env=CARLPendulumEnv)
+    env = gym.make("dac4carl-v0", env=CARLPendulumEnv, total_timesteps=1e2, n_intervals=20)
     obs = env.reset()
     
     action = {
@@ -373,7 +373,9 @@ if __name__ == "__main__":
             "clip_range": 0.2,
         }
     
-    stuff = env.step(action)
+    done = False
+    while not done:
+        _, _, done, _ = env.step(action)
 
     print(f'I\'ve got the magic : {stuff}')
 

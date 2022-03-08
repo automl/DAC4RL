@@ -62,7 +62,7 @@ setup(
             "gym==0.18.3", 
             "scipy==1.7.0",
             "ConfigArgParse==1.5.1",
-            "numpy==1.21.4",
+            "numpy==1.19.5",
             "pandas==1.3.0",
             "matplotlib==3.4.2",
             "optuna==2.9.1",
