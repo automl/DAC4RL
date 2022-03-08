@@ -37,16 +37,31 @@ class DefaultRLGenerator(Generator[RLInstance]):
                                             ]
                                         )
     context_features_pendulum: InitVar[Hyperparameter] = CategoricalHyperparameter(
-        "context_features", choices=[1, 2]
+        "context_features", choices=["max_speed", "dt", "g", "m", "l"]
     )
     context_features_acrobot: InitVar[Hyperparameter] = CategoricalHyperparameter(
-        "context_features", choices=[1,2]
+        "context_features", choices=[
+            "link_length_1", "link_length_2", "link_mass_1", "link_mass_2",
+            "link_com_1", "link_com_2", "link_moi", "max_velocity_1",
+            "max_velocity_2", "torque_noise_max"
+        ]
     )
     context_features_mountaincar: InitVar[Hyperparameter] = CategoricalHyperparameter(
-        "context_features", choices=[1,2]
+        "context_features", choices=[
+            "min_position", "max_position", "max_speed",
+            "goal_position", "goal_velocity", "force",
+            "gravity", "start_position", "start_position_std",
+            "start_velocity", "start_velocity_std"
+        ]
     )
     context_features_lunarlander: InitVar[Hyperparameter] = CategoricalHyperparameter(
-        "context_features", choices=[1,2]
+        "context_features", choices=[
+            "FPS", "SCALE", "MAIN_ENGINE_POWER", "SIDE_ENGINE_POWER",
+            "INITIAL_RANDOM", "GRAVITY_X", "GRAVITY_Y", "LEG_AWAY",
+            "LEG_DOWN", "LEG_W", "LEG_H", "LEG_SPRING_TORQUE", 
+            "SIDE_ENGINE_HEIGHT", "SIDE_ENGINE_AWAY", "VIEWPORT_W",
+            "VIEWPORT_H"
+        ]
     )
     context_dist_std: InitVar[Hyperparameter] = UniformFloatHyperparameter(
         "context_dist_std", 0.01, 0.99, log=True, default_value=0.1
