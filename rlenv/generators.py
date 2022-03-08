@@ -13,6 +13,9 @@ import torch
 import numpy as np
 #TODO: if we want to change the center of the context distribution, 
 # we need to change the sampling method in CARL
+
+
+# TODO Check the instance values
 RLInstance = namedtuple(
     "RLInstance",
     [
