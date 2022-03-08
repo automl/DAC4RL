@@ -1,3 +1,3 @@
-from RLEnv import RLEnv
+from rlenv.RLEnv import RLEnv
 
 rle = RLEnv()
