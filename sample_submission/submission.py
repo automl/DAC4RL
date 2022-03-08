@@ -1,7 +1,7 @@
 # from Steven/Goktug's repo import AbstractPolicy #TODO
 from dac4automlcomp.run_experiments import run_experiment
 
-from dac4automlcomp.policy import DACPolicy, DeterministicPolicy
+from dac4automlcomp.policy import DACPolicy
 
 class BasePolicy(DACPolicy):
     '''

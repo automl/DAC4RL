@@ -105,8 +105,8 @@ class RLEnv(DACEnv[RLInstance], instance_type=RLInstance):
         self.total_timesteps = total_timesteps
         self.n_intervals = n_intervals
         self.env_type = env
-        self.seed = seed
         self.eval_freq = eval_freq
+        self.ref_seed = self.seed(seed)[0]
 
         self.per_interval_steps = int(total_timesteps/n_intervals) 
 
@@ -217,6 +217,9 @@ class RLEnv(DACEnv[RLInstance], instance_type=RLInstance):
     def _(self, instance: RLInstance):
         return instance
 
+    # TODO: 
+    # - Algorithms can be changed between intervals, so just 
+    # create a new every time
     def step(self, action: float):
         """
         Take a step by applying a set of hyperparameters to the model,
@@ -224,30 +227,16 @@ class RLEnv(DACEnv[RLInstance], instance_type=RLInstance):
         its metric, which are returned
         """
 
-        model_path = os.path.join(
-                            self.logger.logdir, 
-                            f"model_instance_{self.instance_counter}.zip"
-                        )
-
         # Generate hyperparams
-        hyperparams = self._set_hps(action)
-        
-        
-        # Load weights if a model has been saved 
-        # -- The case where we are not at the starting instance
-        if os.path.exists(model_path):
-            self.model.load(os.path.join(self.logger.logdir, "model.zip"))
-        else:
-            # Create a new model
-            # TODO agente class should be iun hyperparams, so just ensure 
-            # if this part is not needed
-            # TODO Remove algorithm key form the hyperparams 
-            self.model = self.agent_cls(
-                                env=self.env, 
-                                verbose=1, 
-                                seed=self.seed, 
-                                **hyperparams
-                        )  
+        algo, hyperparams = self._set_hps(action)
+
+        # Create a new model 
+        self.model = eval(algo)(
+                            env=self.env, 
+                            verbose=1, 
+                            seed=self.ref_seed, 
+                            **hyperparams
+                    )  
 
 
         # TODO Check if this is necessary, if not for training performance
@@ -267,11 +256,6 @@ class RLEnv(DACEnv[RLInstance], instance_type=RLInstance):
                                         deterministic=True,
                                         render=False,
                                     )
-
-        # Save the model used in the instance
-        # TODO Change if we have too many intervals -- save every certain steps
-        self.model.save(model_path)
-
 
         if self.interval_counter == self.n_intervals:
             done = True
@@ -308,39 +292,23 @@ class RLEnv(DACEnv[RLInstance], instance_type=RLInstance):
                     - Value Function Coefficients
                     - Clip Coefficient
         """
-        action = {
-            "algorithm": "PPO",
-            "lr": 0.0003,
-            "gamma": 0.99,
-            "gae_lambda": 0.95,
-            "value_loss_coef": 0.5,
-            "entropy_coef": 0.01,
-            "clip_range": 0.2,
-        }
+        # action = {
+        #     "algorithm": "PPO",
+        #     "lr": 0.0003,
+        #     "gamma": 0.99,
+        #     "gae_lambda": 0.95,
+        #     "value_loss_coef": 0.5,
+        #     "entropy_coef": 0.01,
+        #     "clip_range": 0.2,
+        # }
 
         hyperparams = action
         hyperparams["policy"] = "MlpPolicy"
-        
-        return hyperparams
-       
-    def get_contexts(self, context_file: None):
-        """
-        Generate Contexts by either sampling them or getting them 
-        from  file 
-        """
 
+        algo  = hyperparams['algorithm']
+        hyperparams.pop('algorithm')
 
-        if not context_file:
-            contexts = sample_contexts(
-                self.env,
-                self.context_feature_args,
-                self.num_contexts,
-                default_sample_std_percentage=args.default_sample_std_percentage,
-            )
-        else:
-            with open(context_file, "r") as file:
-                contexts = json.load(file)
-        return contexts
+        return algo, hyperparams
 
     def reset(
         self, 
@@ -366,9 +334,10 @@ class RLEnv(DACEnv[RLInstance], instance_type=RLInstance):
         self.contexts = sample_contexts(
                             env_name=self.env_type, 
                             context_feature_args= context_features, 
-                            num_contexts=self.num_contexts,
+                            num_contexts=100,
                             default_sample_std_percentage=context_std
                         )
+        
 
 
         # Get training and evaluation environments
@@ -379,9 +348,9 @@ class RLEnv(DACEnv[RLInstance], instance_type=RLInstance):
             state_context_features="changing_context_features", # Only the features that change are appended to the state
         )
         
-        
+
         self.env, self.eval_env = self.get_env(
-            env_name=self.env,
+            env_name=self.env_type,
             n_envs=1,
             env_kwargs=self.env_kwargs,
             wrapper_class=None,
@@ -389,7 +358,7 @@ class RLEnv(DACEnv[RLInstance], instance_type=RLInstance):
             return_eval_env=True,
             normalize_kwargs=None,
             agent_cls=self.agent_cls,
-            eval_seed=self.seed,
+            eval_seed=self.ref_seed,
         )
  
 
@@ -403,6 +372,20 @@ class RLEnv(DACEnv[RLInstance], instance_type=RLInstance):
 
 
 if __name__ == "__main__":
-    rle = gym.make("rl-v0", env=CARLPendulumEnv)
-    print(f'Ive got the magic')
+    env = gym.make("dac4carl-v0", env=CARLPendulumEnv)
+    obs = env.reset()
+    
+    action = {
+            "algorithm": "PPO",
+            "learning_rate": 0.0003,
+            "gamma": 0.99,
+            "gae_lambda": 0.95,
+            "vf_coef": 0.5,
+            "ent_coef": 0.01,
+            "clip_range": 0.2,
+        }
+    
+    stuff = env.step(action)
+
+    print(f'I\'ve got the magic : {stuff}')
 

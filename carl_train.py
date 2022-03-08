@@ -223,6 +223,12 @@ def get_contexts(args):
             args.num_contexts,
             default_sample_std_percentage=args.default_sample_std_percentage,
         )
+    
+        print(f'env: {args.env}')
+        print(f'context_feature_args: {args.context_feature_args}')
+        print(f'num_contexts: {args.num_contexts}')
+        print(f'default_sample_std_percentage: {args.default_sample_std_percentage}')
+        pdb.set_trace()
     else:
         with open(args.context_file, "r") as file:
             contexts = json.load(file)
