@@ -219,18 +219,19 @@ class RLEnv(DACEnv[RLInstance], instance_type=RLInstance):
     # TODO: 
     # - Algorithms can be changed between intervals, so just 
     # create a new every time
-    def step(self, action: float):
+    def step(self, action):
         """
         Take a step by applying a set of hyperparameters to the model,
         training that model for the per_instance_steps and then evaluating 
         its metric, which are returned
         """
+        print(f'Stepping with action : {action}')
 
         # Generate hyperparams
         algo, hyperparams = self._set_hps(action)
 
         # Create a new model 
-        self.model = eval(algo)(
+        model = eval(algo)(
                             env=self.env, 
                             verbose=1, 
                             seed=self.ref_seed, 
@@ -244,12 +245,12 @@ class RLEnv(DACEnv[RLInstance], instance_type=RLInstance):
         # )
 
         # Train for specified timesteps per interval
-        self.model.learn(total_timesteps=self.per_interval_steps)
+        model.learn(total_timesteps=self.per_interval_steps)
 
 
         # Evaluate Policy for 100 episodes
         mean_reward, std_reward = evaluate_policy(
-                                        model = self.model, 
+                                        model = model, 
                                         env = self.eval_env, 
                                         n_eval_episodes=100,
                                         deterministic=True,
@@ -313,6 +314,7 @@ class RLEnv(DACEnv[RLInstance], instance_type=RLInstance):
 
 
         """
+        print('Resetting the environment')
         super().reset(instance)
         self.interval_counter = 0
         
@@ -360,10 +362,16 @@ class RLEnv(DACEnv[RLInstance], instance_type=RLInstance):
 
 
 if __name__ == "__main__":
-    env = gym.make("dac4carl-v0", env=CARLPendulumEnv, total_timesteps=1e2, n_intervals=20)
-    obs = env.reset()
+    env = gym.make( "dac4carl-v0", 
+                    env=CARLPendulumEnv, 
+                    total_timesteps=1e2, 
+                    n_intervals=20
+                )
     
-    action = {
+    done = False
+    while not done:
+        env.reset()
+        ppo_action = {
             "algorithm": "PPO",
             "learning_rate": 0.0003,
             "gamma": 0.99,
@@ -372,10 +380,8 @@ if __name__ == "__main__":
             "ent_coef": 0.01,
             "clip_range": 0.2,
         }
-    
-    done = False
-    while not done:
-        _, _, done, _ = env.step(action)
+        state, reward, done, _ = env.step(ppo_action)
+        
 
-    print(f'I\'ve got the magic : {stuff}')
+    print(f'I\'ve got the magic')
 

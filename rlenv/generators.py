@@ -55,15 +55,15 @@ class DefaultRLGenerator(Generator[RLInstance]):
             "start_velocity", "start_velocity_std"
         ]
     )
-    # context_features_lunarlander: InitVar[Hyperparameter] = CategoricalHyperparameter(
-    #     "context_features_lunarlander", choices=[
-    #         "FPS", "SCALE", "MAIN_ENGINE_POWER", "SIDE_ENGINE_POWER",
-    #         "INITIAL_RANDOM", "GRAVITY_X", "GRAVITY_Y", "LEG_AWAY",
-    #         "LEG_DOWN", "LEG_W", "LEG_H", "LEG_SPRING_TORQUE", 
-    #         "SIDE_ENGINE_HEIGHT", "SIDE_ENGINE_AWAY", "VIEWPORT_W",
-    #         "VIEWPORT_H"
-    #     ]
-    # )
+    context_features_lunarlander: InitVar[Hyperparameter] = CategoricalHyperparameter(
+        "context_features_lunarlander", choices=[
+            "FPS", "SCALE", "MAIN_ENGINE_POWER", "SIDE_ENGINE_POWER",
+            "INITIAL_RANDOM", "GRAVITY_X", "GRAVITY_Y", "LEG_AWAY",
+            "LEG_DOWN", "LEG_W", "LEG_H", "LEG_SPRING_TORQUE", 
+            "SIDE_ENGINE_HEIGHT", "SIDE_ENGINE_AWAY", "VIEWPORT_W",
+            "VIEWPORT_H"
+        ]
+    )
     context_dist_std: InitVar[Hyperparameter] = UniformFloatHyperparameter(
         "context_dist_std", 0.01, 0.99, log=True, default_value=0.1
     )
@@ -89,8 +89,8 @@ class DefaultRLGenerator(Generator[RLInstance]):
             features = config['context_features_mountaincar']
         elif config['env_type'] == 'CARLAcrobotEnv':
             features = config['context_features_acrobot']
-        # elif config['env_type'] == 'CARLLunarLanderEnv':
-        #     features = config['context_features_lunarlander']
+        elif config['env_type'] == 'CARLLunarLanderEnv':
+            features = config['context_features_lunarlander']
         else:
             raise ValueError(f"Unknown env_type {config['env_type']}")
         torch.set_rng_state(default_rng_state)
