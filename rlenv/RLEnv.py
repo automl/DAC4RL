@@ -280,17 +280,6 @@ class RLEnv(DACEnv[RLInstance], instance_type=RLInstance):
 
         Args:
             action: Dict of hyperparameters (Exhaustive list for all algorithms)
-                    - Algorithm
-                    - Learning Rate
-                    - Discount Factor
-                    - Tau
-                    - Action Noise
-                    - GAE Lambda
-                    - Replay Buffer Size
-                    - Replay buffer Class
-                    - Entropy coefficient
-                    - Value Function Coefficients
-                    - Clip Coefficient
         """
 
         hyperparams = action
@@ -322,13 +311,16 @@ class RLEnv(DACEnv[RLInstance], instance_type=RLInstance):
         
         (self.env_type, context_features, context_std) = self.current_instance
 
-        # Sample contexts
+        print(f'New Environment is {self.env_type}')
+
+        # Sample contexts based on the instance
         self.contexts = sample_contexts(
                             env_name=self.env_type, 
                             context_feature_args= context_features, 
                             num_contexts=100,
                             default_sample_std_percentage=context_std
                         )
+
 
         # Get training and evaluation environments
         self.env_kwargs = dict(
@@ -350,6 +342,8 @@ class RLEnv(DACEnv[RLInstance], instance_type=RLInstance):
             agent_cls=self.agent_cls,
             eval_seed=self.ref_seed,
         )
+
+
  
 
     def seed(self, seed=None):
@@ -383,5 +377,5 @@ if __name__ == "__main__":
         state, reward, done, _ = env.step(ppo_action)
         
 
-    print(f'I\'ve got the magic')
+    print(f'I\'ve got the magic stuff')
 
