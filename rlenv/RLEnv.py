@@ -55,24 +55,12 @@ from dataclasses import dataclass, InitVar
 from rlenv.generators import DefaultRLGenerator, RLInstance
 
 
-
-# NOTE: Design choices to do
-# Rewar histories in different states 
-
-
 class RLEnv(DACEnv[RLInstance], instance_type=RLInstance):
     def __init__(
         self,
-        env,
-        generator: Generator[RLInstance] = DefaultRLGenerator(),
-        # outdir='/tmp/RL_test',
-        # parser,
-        # args,
-        
+        generator: Generator[RLInstance] = DefaultRLGenerator(),        
         device: str = "cpu",
-        agent= 'PPO',
-        seed = 123456,
-        eval_freq = 500, 
+        seed = 123456, 
         total_timesteps = 1e6,
         n_intervals = 20,    # Should be really low for evaluations
                 
@@ -83,13 +71,8 @@ class RLEnv(DACEnv[RLInstance], instance_type=RLInstance):
 
         Args:
             generator: Generator object that generates the hyperparameter space
-            outdir: Path to the output directory
-            parser: ArgumentParser object that contains the arguments for the experiment
-            env: CARL environment
             device: Device to use for the agent
-            agent: Agent to use for training
             seed: Seed for the environment
-            eval_freq: Frequency at which to evaluate the agent
             total_timesteps: Total number of timesteps to train for
             n_instances: Number of instances to train for
         """
@@ -99,32 +82,11 @@ class RLEnv(DACEnv[RLInstance], instance_type=RLInstance):
 
         self.total_timesteps = total_timesteps
         self.n_intervals = n_intervals
-        self.env_type = env
-        self.eval_freq = eval_freq
         self.ref_seed = self.seed(seed)[0]
 
         self.per_interval_steps = int(total_timesteps/n_intervals) 
-
     
-        # set up logger TODO check if required for tracking reward history
-        # self.logger = TrialLogger(
-        #     outdir,
-        #     parser=parser,
-        #     trial_setup_args=args,
-        #     add_context_feature_names_to_logdir=False,
-        #     init_sb3_tensorboard=False,  # set to False if using SubprocVecEnv
-        # )
-    
-        # Get the agent class
-        try:
-            self.agent_cls = eval(agent)
-
-        except ValueError:
-            print(
-                f"{agent} is an unknown agent class. Please use a classname from stable baselines 3"
-            )
-
-        # Counter to track instances
+        # Counter to track intervals
         self.interval_counter = 0
 
     
@@ -212,20 +174,31 @@ class RLEnv(DACEnv[RLInstance], instance_type=RLInstance):
     def _(self, instance: RLInstance):
         return instance
 
-    # TODO: 
-    # - Algorithms can be changed between intervals, so just 
-    # create a new every time
+  
     def step(self, action):
         """
         Take a step by applying a set of hyperparameters to the model,
         training that model for the per_instance_steps and then evaluating 
-        its metric, which are returned
+        its metrics, which are returned as a state
         """
         print(f'Stepping with action : {action}')
 
         # Generate hyperparams
         algo, hyperparams = self._set_hps(action)
 
+        # Get the environment for training and evaluation
+        self.env, self.eval_env = self.get_env(
+            env_name=self.env_type,
+            n_envs=1,
+            env_kwargs=self.env_kwargs,
+            wrapper_class=None,
+            vec_env_cls=DummyVecEnv,
+            return_eval_env=True,
+            normalize_kwargs=None,
+            agent_cls=eval(algo),
+            eval_seed=self.ref_seed,
+        )
+        
         # Create a new model 
         model = eval(algo)(
                             env=self.env, 
@@ -235,19 +208,12 @@ class RLEnv(DACEnv[RLInstance], instance_type=RLInstance):
                     )  
 
 
-        # TODO Check if this is necessary, if not for training performance
-        # self.model.set_logger(
-        #     self.logger.stable_baselines_logger
-        # )
-
         # Train for specified timesteps per interval
         model.learn(total_timesteps=self.per_interval_steps)
 
-        # Get episode rewards
+        # Get episode metrics
         episode_rewards = self.env.envs[0].get_episode_rewards()
         episode_lengths = self.env.envs[0].get_episode_lengths()
-
-
 
         # Evaluate Policy for 100 episodes
         mean_reward, std_reward = evaluate_policy(
@@ -264,25 +230,26 @@ class RLEnv(DACEnv[RLInstance], instance_type=RLInstance):
             done = False
             self.interval_counter += 1
 
-        # TODO Check if reward history is required
         state = {
             "step": self.interval_counter,
             "std_reward" : std_reward,
-            'Instance': self.instance,
+            'Instance': self.current_instance,
             'epido_rewards': episode_rewards,
             'epido_lengths': episode_lengths,
         }
 
         return state, mean_reward, done, {}
 
-    # TODO check if the kwargs make sense for the algorithm
-    # Policy Architecture keeps to default
     def _set_hps(self, action: Dict):
         """
         Set the hyperparameters based on the action 
 
         Args:
             action: Dict of hyperparameters (Exhaustive list for all algorithms)
+
+        Returns:
+            algo: Algorithm name
+            hyperparams: Dict of hyperparameters
         """
 
         hyperparams = action
@@ -334,22 +301,6 @@ class RLEnv(DACEnv[RLInstance], instance_type=RLInstance):
         )
         
 
-        self.env, self.eval_env = self.get_env(
-            env_name=self.env_type,
-            n_envs=1,
-            env_kwargs=self.env_kwargs,
-            wrapper_class=None,
-            vec_env_cls=DummyVecEnv,
-            return_eval_env=True,
-            normalize_kwargs=None,
-            agent_cls=self.agent_cls,
-            eval_seed=self.ref_seed,
-        )
-
-
-
-
- 
 
     def seed(self, seed=None):
         """
@@ -362,7 +313,6 @@ class RLEnv(DACEnv[RLInstance], instance_type=RLInstance):
 
 if __name__ == "__main__":
     env = gym.make( "dac4carl-v0", 
-                    env=CARLPendulumEnv, 
                     total_timesteps=1e2, 
                     n_intervals=20
                 )

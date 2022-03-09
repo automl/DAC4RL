@@ -40,6 +40,7 @@ class DefaultRLGenerator(Generator[RLInstance]):
                                                     'CARLAcrobotEnv', 
                                                     'CARLMountainCarContinuousEnv', 
                                                     'CARLLunarLanderEnv'
+                                                    'CARLCartPoleEnv'
                                                 ]
                                             )
         self.context_features_pendulum: InitVar[Hyperparameter] = CategoricalHyperparameter(
@@ -52,12 +53,11 @@ class DefaultRLGenerator(Generator[RLInstance]):
                 "max_velocity_2", "torque_noise_max"
             ]
         )
-        self.context_features_mountaincar: InitVar[Hyperparameter] = CategoricalHyperparameter(
-            "context_features_mountaincar", choices=[
-                "min_position", "max_position", "max_speed",
-                "goal_position", "goal_velocity", "force",
-                "gravity", "start_position", "start_position_std",
-                "start_velocity", "start_velocity_std"
+        self.context_features_mcc: InitVar[Hyperparameter] = CategoricalHyperparameter(
+            "context_features_mcc", choices=[
+                "min_position", "max_position", "max_speed", "goal_position", "goal_velocity",
+                "power", "min_position_start", "max_position_start", "min_velocity_start",
+                "max_velocity_start",
             ]
         )
         self.context_features_lunarlander: InitVar[Hyperparameter] = CategoricalHyperparameter(
@@ -69,6 +69,14 @@ class DefaultRLGenerator(Generator[RLInstance]):
                 "VIEWPORT_H"
             ]
         )
+
+        self.context_features_cartpole: InitVar[Hyperparameter] = CategoricalHyperparameter(
+            "context_features_cartpole", choices=[
+                "gravity", "masscart", "masspole", "pole_length", 
+                "force_magnifier", "update_interval"
+            ]
+        )
+
         self.context_dist_std: InitVar[Hyperparameter] = UniformFloatHyperparameter(
             "context_dist_std", 0.01, 0.99, log=True, default_value=0.1
         )
@@ -85,8 +93,11 @@ class DefaultRLGenerator(Generator[RLInstance]):
         self.acrobot_context = ConfigurationSpace()
         self.acrobot_context.add_hyperparameter(self.context_features_acrobot)
 
-        self.mountaincar_context = ConfigurationSpace()
-        self.mountaincar_context.add_hyperparameter(self.context_features_mountaincar)
+        self.mcc_context = ConfigurationSpace()
+        self.mcc_context.add_hyperparameter(self.context_features_mcc)
+
+        self.cartpole_context = ConfigurationSpace()
+        self.cartpole_context.add_hyperparameter(self.context_features_cartpole)
         
         self.lunarlander_context = ConfigurationSpace()
         self.lunarlander_context.add_hyperparameter(self.context_features_lunarlander)
@@ -100,8 +111,9 @@ class DefaultRLGenerator(Generator[RLInstance]):
         self.env_space.seed(seed)
         self.pendulum_context.seed(seed)
         self.acrobot_context.seed(seed)
-        self.mountaincar_context.seed(seed)
+        self.mcc_context.seed(seed)
         self.lunarlander_context.seed(seed)
+        self.cartpole_context.seed(seed)
 
         # Seed the torch backend
         torch.manual_seed(seed)
@@ -120,8 +132,8 @@ class DefaultRLGenerator(Generator[RLInstance]):
 
         elif env_config['env_type'] == 'CARLMountainCarContinuousEnv':
             for _ in range(self.max_context):
-                context = self.mountaincar_context.sample_configuration()
-                features.append(context['context_features_mountaincar'])
+                context = self.mcc_context.sample_configuration()
+                features.append(context['context_features_mcc'])
         elif env_config['env_type'] == 'CARLAcrobotEnv':
             for _ in range(self.max_context):
                 context = self.acrobot_context.sample_configuration()
@@ -130,6 +142,10 @@ class DefaultRLGenerator(Generator[RLInstance]):
             for _ in range(self.max_context):
                 context = self.lunarlander_context.sample_configuration()
                 features.append(context['context_features_lunarlander'])
+        elif env_config['env_type'] == 'CARLCartPoleEnv':
+            for _ in range(self.max_context):
+                context = self.cartpole_context.sample_configuration()
+                features.append(context['context_features_cartpole'])
         else:
             raise ValueError(f"Unknown env_type {env_config['env_type']}")
         torch.set_rng_state(default_rng_state)
@@ -139,4 +155,3 @@ class DefaultRLGenerator(Generator[RLInstance]):
                     features, 
                     env_config['context_dist_std']
                 )
-
