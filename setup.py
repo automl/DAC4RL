@@ -71,7 +71,8 @@ setup(
             "pyglet==1.5.15",
             "pytablewriter==0.62.0",
             "PyYAML==5.4.1",
-            "tabulate==0.8.9"        
+            "tabulate==0.8.9",
+            "box2d-py==2.3.5",
     ],
     extras_require={
        'experiments' : [
@@ -81,8 +82,6 @@ setup(
             "stable_baselines3==1.1.0",
             "tensorflow==2.5.0"
        ],
-       "Box2D" : "gym[box2d]==2.3.10"
-
     },
 )
 
