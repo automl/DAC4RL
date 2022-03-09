@@ -31,6 +31,7 @@ from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.vec_env.vec_normalize import VecNormalize
 from stable_baselines3.common.vec_env import SubprocVecEnv, DummyVecEnv
 from stable_baselines3 import DDPG, PPO, SAC
+from stable_baselines3.common.monitor import Monitor
 
 
 from carl.envs import *
@@ -54,13 +55,8 @@ from dataclasses import dataclass, InitVar
 from rlenv.generators import DefaultRLGenerator, RLInstance
 
 
-# TODO: 
-# - Control the number of contexts sampled per instance
-# - Control the distribution of contexts in the generator
-
 
 # NOTE: Design choices to do
-# Training step intervals
 # Rewar histories in different states 
 
 
@@ -247,6 +243,11 @@ class RLEnv(DACEnv[RLInstance], instance_type=RLInstance):
         # Train for specified timesteps per interval
         model.learn(total_timesteps=self.per_interval_steps)
 
+        # Get episode rewards
+        episode_rewards = self.env.envs[0].get_episode_rewards()
+        episode_lengths = self.env.envs[0].get_episode_lengths()
+
+
 
         # Evaluate Policy for 100 episodes
         mean_reward, std_reward = evaluate_policy(
@@ -267,7 +268,9 @@ class RLEnv(DACEnv[RLInstance], instance_type=RLInstance):
         state = {
             "step": self.interval_counter,
             "std_reward" : std_reward,
-            'Instance': None
+            'Instance': self.instance,
+            'epido_rewards': episode_rewards,
+            'epido_lengths': episode_lengths,
         }
 
         return state, mean_reward, done, {}
@@ -342,6 +345,8 @@ class RLEnv(DACEnv[RLInstance], instance_type=RLInstance):
             agent_cls=self.agent_cls,
             eval_seed=self.ref_seed,
         )
+
+
 
 
  
