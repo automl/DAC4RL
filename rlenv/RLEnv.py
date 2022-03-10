@@ -47,10 +47,6 @@ importlib.reload(carl.training.trial_logger)
 from carl.training.trial_logger import TrialLogger
 
 from carl.context.sampling import sample_contexts
-from carl.utils.hyperparameter_processing import preprocess_hyperparams
-
-from collections import namedtuple
-from dataclasses import dataclass, InitVar
 
 from rlenv.generators import DefaultRLGenerator, RLInstance
 
@@ -233,9 +229,9 @@ class RLEnv(DACEnv[RLInstance], instance_type=RLInstance):
         state = {
             "step": self.interval_counter,
             "std_reward" : std_reward,
-            'Instance': self.current_instance,
-            'epido_rewards': episode_rewards,
-            'epido_lengths': episode_lengths,
+            "instance": self.current_instance,
+            "episode_rewards": episode_rewards,
+            "episode_lengths": episode_lengths,
         }
 
         return state, mean_reward, done, {}
@@ -300,6 +296,15 @@ class RLEnv(DACEnv[RLInstance], instance_type=RLInstance):
             state_context_features="changing_context_features", # Only the features that change are appended to the state
         )
         
+        state = {
+            "step": self.interval_counter,
+            "std_reward" : None,
+            "instance": self.current_instance,
+            "episode_rewards": None,
+            "episode_lengths": None,
+        }   
+
+        return state
 
 
     def seed(self, seed=None):
