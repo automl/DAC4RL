@@ -126,16 +126,34 @@ class ConstantPolicy(DACPolicy):
 
         return action 
 
-    def reset(self):
+    def reset(self, instance):
+        """ Reset a policy's internal state.
+
+        The reset method is there to support 'stateful' policies (e.g., LSTM),
+        i.e., whose actions are a function not only of the current
+        observations, but of the entire observation history from the
+        current episode/execution. It is called at the beginning of the
+        target algorithm execution (before the first call to act()) and also provides the policy
+        with information about the target problem instance being solved.
+
+        Args:
+            instance: The problem instance the target algorithm to be configured is currently solving
+        """
         pass
 
-    def load(self):
+    def seed(self, seed):
+        """Sets random state of the policy.
+        Subclasses should implement this method if their policy is stochastic
+        """
         pass
 
-    def save(self):
+    def save(self, path):
+        """Saves the policy to given folder path."""
         pass
 
-    def seed(self):
+    @classmethod
+    def load(cls, path):
+        """Loads the policy from given folder path."""
         pass
 
 if __name__ == "__main__":

@@ -1,17 +1,17 @@
 from setuptools import setup
 
 packages = [
-    "DAC4RL"
+    "dac4rl"
 ]
 
 package_data = {"": ["*"]}
 
 AUTHORS = (
     ", ".join(
-        [
-            
+        [            
             "Raghu Rajan",
-            "Aditya Mohan"
+            "Aditya Mohan",
+            "Theresa Eimer",
         ]
     ),
 )
@@ -32,7 +32,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 setup(
-    name="rl_env",
+    name="dac4rl",
     version="0.0.1",
     package_dir={'carl': 'carl'},
     author=AUTHORS,
