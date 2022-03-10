@@ -2,7 +2,8 @@ import argparse
 from pathlib import Path
 
 import gym
-from baselines import schedulers
+from DAC4RL import rlenv
+from DAC4RL.baselines import schedulers
 
 import ray
 from ray import tune
@@ -11,7 +12,6 @@ from ray.tune.examples.pbt_function import pbt_function
 
 
 def evaluate_cost(cfg, **kwargs):
-    #TODO: pickle won't like this...
     global args
     global train_env
     global done
@@ -50,7 +50,7 @@ def evaluate_cost(cfg, **kwargs):
                   "gradient_steps": cfg["gradient_steps"],
                   }
     obs, reward, done, _ = train_env.step(action)
-    return reward
+    return {"mean_reward": reward}
 
 
 if __name__ == "__main__":
@@ -66,9 +66,9 @@ if __name__ == "__main__":
     logdir = Path(args.outdir)
     logdir.mkdir(parents=True, exist_ok=True)
 
-    train_env = gym.make("dac4carl-v0", n_instances=args.n_instances)
+    train_env = gym.make("dac4carl-v0")
     train_env.seed(args.env_seed)
-    done = False
+    done = True
 
     pbt = PB2(
         perturbation_interval=1,
@@ -96,7 +96,7 @@ if __name__ == "__main__":
         mode="max",
         verbose=False,
         stop={
-            "training_iteration": 30,
+            "training_iteration": 120,
         },
         num_samples=8,
         fail_fast=True,
@@ -118,9 +118,30 @@ if __name__ == "__main__":
 
     print("Best hyperparameters found were: ", analysis.best_config)
 
-    #TODO: make dac policy out of schedule
-    #question is if the best config is the schedule and if not how to get the schedule out of the analysis
-    stuff = analysis.trial.config
+    results = analysis.dataframe()
+    best_process = analysis.best_dataframe["pid"].values[0]
+    best_schedule = results[results["pid"]==best_process].sort_values(by=["training_iteration"])
+    hyperparams = {}
+    if round(analysis.best_config["algorithm"]) == 0:
+        hyperparams["algorithm"] = "PPO"
+    elif round(analysis.best_config["algorithm"]) == 1:
+        hyperparams["algorithm"] = "SAC"
+    else:
+        hyperparams["algorithm"] = "DDPG"
+    hyperparams["learning_rates"] = list(best_schedule["config/learning_rate"].values)
+    hyperparams["gammas"] = list(best_schedule["config/gamma"].values)
+    hyperparams["gae_lambdas"] = list(best_schedule["config/gae_lambda"].values)
+    hyperparams["vf_coefs"] = list(best_schedule["config/vf_coef"].values)
+    hyperparams["ent_coefs"] = list(best_schedule["config/ent_coef"].values)
+    hyperparams["clip_ranges"] = list(best_schedule["config/clip_range"].values)
+    hyperparams["batch_sizes"] = [int(i) for i in list(best_schedule["config/batch_size"].values)]
+    hyperparams["taus"] = list(best_schedule["config/tau"].values)
+    hyperparams["learning_starts"] = [int(i) for i in list(best_schedule["config/learning_starts"].values)]
+    hyperparams["train_freqs"] = [int(i) for i in list(best_schedule["config/train_freq"].values)]
+    hyperparams["gradient_steps"] = [int(i) for i in list(best_schedule["config/gradient_steps"].values)]
+    hyperparams["buffer_sizes"] = [int(i) for i in list(best_schedule["config/buffer_size"].values)]
+    policy = schedulers.SchedulePolicy(**hyperparams)
+    
     config_save_dir = logdir / "saved_configs"
     config_save_dir.mkdir(parents=True, exist_ok=True)
-    incumbent_policy.save(config_save_dir)
+    policy.save(config_save_dir)
