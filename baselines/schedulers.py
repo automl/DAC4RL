@@ -3,9 +3,8 @@ import json
 from typing import List, Union
 
 import numpy as np
-import torch.optim
 from ConfigSpace.configuration_space import ConfigurationSpace
-from ConfigSpace.hyperparameters import UniformFloatHyperparameter, UniformIntegerHyperparameter, CategoricalHyperparamter
+from ConfigSpace.hyperparameters import UniformFloatHyperparameter, UniformIntegerHyperparameter, CategoricalHyperparameter
 from dac4automlcomp.policy import DACPolicy, DeterministicPolicy
 
 

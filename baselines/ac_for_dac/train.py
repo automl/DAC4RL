@@ -2,12 +2,13 @@ import argparse
 from pathlib import Path
 
 import gym
+from DAC4RL import rlenv
 from dac4automlcomp.policy import DeterministicPolicy
 from smac.facade.smac_ac_facade import SMAC4AC
 from smac.initial_design.random_configuration_design import RandomConfigurations
 from smac.scenario.scenario import Scenario
 
-from baselines import schedulers
+from DAC4RL.baselines import schedulers
 
 
 class SchedulerPolicyAction(argparse.Action):
@@ -67,7 +68,7 @@ if __name__ == "__main__":
     logdir = Path(args.outdir)
     logdir.mkdir(parents=True, exist_ok=True)
 
-    train_env = gym.make("dac4carl-v0", n_instances=args.n_instances)
+    train_env = gym.make("dac4carl-v0")
     train_env.seed(args.env_seed)
 
     scenario = Scenario(
