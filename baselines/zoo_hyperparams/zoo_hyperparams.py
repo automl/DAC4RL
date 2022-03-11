@@ -12,7 +12,7 @@ from carl.envs import *
 import gym
 import pdb
 
-class ConstantPolicy(DACPolicy):
+class ZooHyperparams(DACPolicy):
     '''
     A policy which checks the instance and applies the zoo parameters for PPO
     and applies them to the model. The parameters are based on the ones specified 

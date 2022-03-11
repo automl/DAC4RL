@@ -2,10 +2,10 @@ from pathlib import Path
 
 from dac4automlcomp.policy import DACPolicy
 
-import constant_agent
+import zoo_hyperparams
 
 
-def load_solution(policy_cls=constant_agent.ConstantPolicy, path=Path("tmp", "saved_configs")) -> DACPolicy:
+def load_solution(policy_cls=zoo_hyperparams.ZooHyperparams, path=Path("tmp", "saved_configs")) -> DACPolicy:
     """
     Load Solution.
     Serves as an entry point for the competition evaluation.
