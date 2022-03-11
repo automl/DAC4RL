@@ -11,21 +11,21 @@ from ray.tune.schedulers.pb2 import PB2
 from ray.tune.examples.pbt_function import pbt_function
 
 
-def evaluate_cost(cfg, **kwargs):
+def evaluate_cost(cfg, checkpoint_dir=None):
     global args
     global train_env
-    global done
-    if done:
-        train_env.reset()
-    if round(cfg["algorithm"]) == 0:
-        cfg["algorithm"] = "PPO"
-    elif round(cfg["algorithm"]) == 1:
-        cfg["algorithm"] = "SAC"
-    else:
-        cfg["algorithm"] = "DDPG"
+    train_env.reset()
+    done = False
+    while not done:
+        if round(cfg["algorithm"]) == 0:
+            algorithm = "PPO"
+        elif round(cfg["algorithm"]) == 1:
+            algorithm = "SAC"
+        else:
+            algorithm = "DDPG"
 
-    if cfg["algorithm"] == "PPO":
-        action = {"algorithm": cfg["algorithm"],
+        if algorithm == "PPO":
+            action = {"algorithm": algorithm,
                   "learning_rate": cfg["learning_rate"],
                   "gamma": cfg["gamma"],
                   "gae_lambda": cfg["gae_lambda"],
@@ -33,13 +33,13 @@ def evaluate_cost(cfg, **kwargs):
                   "ent_coef": cfg["ent_coef"],
                   "clip_range": cfg["clip_range"]
                   }
-    else:
-        cfg["batch_size"] = int(cfg["batch_size"])
-        cfg["buffer_size"] = int(cfg["buffer_size"])
-        cfg["learning_starts"] = int(cfg["learning_starts"])
-        cfg["train_freq"] = int(cfg["train_freq"])
-        cfg["gradient_steps"] = int(cfg["gradient_steps"])
-        action = {"algorithm": cfg["algorithm"],
+        else:
+            cfg["batch_size"] = int(cfg["batch_size"])
+            cfg["buffer_size"] = int(cfg["buffer_size"])
+            cfg["learning_starts"] = int(cfg["learning_starts"])
+            cfg["train_freq"] = int(cfg["train_freq"])
+            cfg["gradient_steps"] = int(cfg["gradient_steps"])
+            action = {"algorithm": algorithm,
                   "learning_rate": cfg["learning_rate"],
                   "buffer_size": cfg["buffer_size"],
                   "learning_starts": cfg["learning_starts"],
@@ -49,8 +49,14 @@ def evaluate_cost(cfg, **kwargs):
                   "train_freq": cfg["train_freq"],
                   "gradient_steps": cfg["gradient_steps"],
                   }
-    obs, reward, done, _ = train_env.step(action)
-    return {"mean_reward": reward}
+        print(action)
+        obs, reward, done, _ = train_env.step(action)
+        print(reward)
+        #with tune.checkpoint_dir() as checkpoint_dir:
+        #    path = os.path.join(checkpoint_dir, "config_checkpoint")
+        #    with open(path, "w") as f:
+        #        f.write(json.dumps({"config": cfg}))
+        tune.report(reward=reward)#{"mean_reward": reward}
 
 
 if __name__ == "__main__":
@@ -71,7 +77,8 @@ if __name__ == "__main__":
     done = True
 
     pbt = PB2(
-        perturbation_interval=1,
+        time_attr="training_iteration",
+        perturbation_interval=2,
         hyperparam_bounds={
             "algorithm": [0.0, 2.0],
             "learning_rate": [0.0001, 1.0],
@@ -92,13 +99,13 @@ if __name__ == "__main__":
         evaluate_cost,
         name="pb2_baseline",
         scheduler=pbt,
-        metric="mean_reward",
+        metric="reward",
         mode="max",
-        verbose=False,
+        verbose=True,
         stop={
-            "training_iteration": 120,
+            "training_iteration": 8,
         },
-        num_samples=8,
+        num_samples=2,
         fail_fast=True,
         config={
             "algorithm": 0.0,
@@ -121,6 +128,7 @@ if __name__ == "__main__":
     results = analysis.dataframe()
     best_process = analysis.best_dataframe["pid"].values[0]
     best_schedule = results[results["pid"]==best_process].sort_values(by=["training_iteration"])
+    print(best_schedule)
     hyperparams = {}
     if round(analysis.best_config["algorithm"]) == 0:
         hyperparams["algorithm"] = "PPO"
