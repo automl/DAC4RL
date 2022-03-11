@@ -2,7 +2,7 @@ from pathlib import Path
 
 from dac4automlcomp.policy import DACPolicy
 
-from examples import constant_agent
+import constant_agent
 
 
 def load_solution(policy_cls=constant_agent.ConstantPolicy, path=Path("tmp", "saved_configs")) -> DACPolicy:
