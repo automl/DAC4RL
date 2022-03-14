@@ -157,7 +157,7 @@ class ZooHyperparams(DACPolicy):
         pass
 
 if __name__ == "__main__":
-    policy = ConstantPolicy()
+    policy = ZooHyperparams()
     env = gym.make( "dac4carl-v0", 
                     total_timesteps=1e2, 
                     n_intervals=20
