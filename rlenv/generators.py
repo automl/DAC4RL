@@ -39,7 +39,7 @@ class DefaultRLGenerator(Generator[RLInstance]):
                                                     'CARLPendulumEnv', 
                                                     'CARLAcrobotEnv', 
                                                     'CARLMountainCarContinuousEnv', 
-                                                    'CARLLunarLanderEnv'
+                                                    'CARLLunarLanderEnv',
                                                     'CARLCartPoleEnv'
                                                 ]
                                             )
