@@ -38,7 +38,7 @@ def get_parser():
     parser.add_argument("--n_instances", type=int, default=1000, help="Number of instances in training environment")
     parser.add_argument("--env_seed", type=int, default=42, help="Random seed for the training environment")
     parser.add_argument("--smac_seed", type=int, default=42, help="Random seed for SMAC")
-    parser.add_argument("--smac_budget", type=int, default=5000, help="Budget for SMAC (# TAE calls)")
+    parser.add_argument("--smac_budget", type=int, default=20, help="Budget for SMAC (# TAE calls)")
     parser.add_argument("--outdir", type=str, default="tmp", help="Directory where to save trained models and logs.")
     return parser
 
@@ -48,14 +48,15 @@ def evaluate_cost(cfg, seed, instance, **kwargs):
     global train_env
     policy = args.policy.from_config(cfg)
     policy.seed(seed)
-    obs = train_env.reset(instance=int(instance))
-    policy.reset(train_env.current_instance)
-    done = False
-    total_reward = 0
-    while not done:
-        action = policy.act(obs)
-        obs, reward, done, _ = train_env.step(action)
-        total_reward += reward
+    for i in range(5):
+        obs = train_env.reset(instance=int(instance))
+        policy.reset(train_env.current_instance)
+        done = False
+        total_reward = 0
+        while not done:
+            action = policy.act(obs)
+            obs, reward, done, _ = train_env.step(action)
+            total_reward += reward
     return -total_reward
 
 
