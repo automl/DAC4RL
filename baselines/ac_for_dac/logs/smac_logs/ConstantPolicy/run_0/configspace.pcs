@@ -1,0 +1,13 @@
+algorithm categorical {PPO, SAC, DDPG} [PPO]
+batch_size integer [8, 1024] [516]
+buffer_size integer [1000, 100000000] [50000500]
+clip_range real [0.0, 1.0] [0.5]
+ent_coef real [1e-06, 1.0] [0.5000005]
+gae_lambda real [1e-06, 0.99] [0.4950005]
+gamma real [1e-06, 1.0] [0.5000005]
+gradient_steps integer [-1, 1000] [500]
+learning_rate real [1e-06, 10.0] [0.0031622777]log
+learning_starts integer [1, 10000] [5000]
+tau real [0.0, 1.0] [0.5]
+train_freq integer [1, 10000] [5000]
+vf_coef real [1e-06, 1.0] [0.5000005]
