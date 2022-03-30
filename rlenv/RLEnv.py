@@ -84,6 +84,9 @@ class RLEnv(DACEnv[RLInstance], instance_type=RLInstance):
     
         # Counter to track intervals
         self.interval_counter = 0
+        print(f'Total timesteps : {self.total_timesteps}')
+        print(f'Per interval steps : {self.per_interval_steps}')
+
 
     
     def get_env(
@@ -182,6 +185,8 @@ class RLEnv(DACEnv[RLInstance], instance_type=RLInstance):
         # Generate hyperparams
         algo, hyperparams = self._set_hps(action)
 
+        agent = getattr(stable_baselines3, algo)
+
         # Get the environment for training and evaluation
         self.env, self.eval_env = self.get_env(
             env_name=self.env_type,
@@ -191,25 +196,28 @@ class RLEnv(DACEnv[RLInstance], instance_type=RLInstance):
             vec_env_cls=DummyVecEnv,
             return_eval_env=True,
             normalize_kwargs=None,
-            agent_cls=eval(algo),
+            agent_cls=agent,
             eval_seed=self.ref_seed,
         )
         
         # Create a new model 
-        model = eval(algo)(
-                            env=self.env, 
-                            verbose=1, 
-                            seed=self.ref_seed, 
-                            **hyperparams
+        model = agent(
+                        env=self.env, 
+                        verbose=1, 
+                        seed=self.ref_seed, 
+                        **hyperparams
                     )  
-
 
         # Train for specified timesteps per interval
         model.learn(total_timesteps=self.per_interval_steps)
 
+
         # Get episode metrics
         episode_rewards = self.env.envs[0].get_episode_rewards()
         episode_lengths = self.env.envs[0].get_episode_lengths()
+
+
+
 
         # Evaluate Policy for 100 episodes
         mean_reward, std_reward = evaluate_policy(
@@ -225,6 +233,9 @@ class RLEnv(DACEnv[RLInstance], instance_type=RLInstance):
         else:
             done = False
             self.interval_counter += 1
+        
+        print(f'Done : {done}')
+        print(f'Interval counter : {self.interval_counter}')
 
         state = {
             "step": self.interval_counter,
@@ -271,7 +282,6 @@ class RLEnv(DACEnv[RLInstance], instance_type=RLInstance):
         """
         print('Resetting the environment')
         super().reset(instance)
-        self.interval_counter = 0
         
         assert isinstance(self.current_instance, RLInstance)
         

@@ -12,12 +12,13 @@ from carl.envs import *
 import gym
 import pdb
 
+import time
+
 class ZooHyperparams(DACPolicy):
     '''
-    A policy which checks the instance and applies the zoo parameters for PPO
-    and applies them to the model. The parameters are based on the ones specified 
-    in stable_baselines zoo 
-    (https://github.com/DLR-RM/rl-baselines3-zoo/blob/master/hyperparams/ppo.yml)
+    A policy which checks the instance and applies fixed parameters for PPO
+    to the model. The parameters are based on the ones specified in stable_baselines 
+    zoo (https://github.com/DLR-RM/rl-baselines3-zoo/blob/master/hyperparams/ppo.yml)
     
     '''
 
@@ -120,7 +121,7 @@ class ZooHyperparams(DACPolicy):
         zoo_params = self._get_zoo_params(env)
 
         # Create the action dictionary
-        action = {"algorithm": "PPO"}
+        action = {"algorithm": self.algorithm}
         action = {**action, **zoo_params}
 
 
@@ -157,9 +158,12 @@ class ZooHyperparams(DACPolicy):
         pass
 
 if __name__ == "__main__":
+    
+    start_time = time.time()
+
     policy = ZooHyperparams()
     env = gym.make( "dac4carl-v0", 
-                    total_timesteps=1e2, 
+                    total_timesteps=1e6, 
                     n_intervals=20
                 )
     done = False
@@ -168,6 +172,9 @@ if __name__ == "__main__":
     reward_history = []
     while not done:
         # get the default stat at reset
+
+        init_time = time.time()
+
         state = env.reset()
 
         # generate an action
@@ -178,3 +185,6 @@ if __name__ == "__main__":
         
         #save the reward 
         reward_history.append(reward)
+        print("--- %s seconds per instance---" % (time.time() - init_time))
+
+    print("--- %s seconds ---" % (time.time() - start_time))
