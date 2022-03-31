@@ -13,9 +13,6 @@ from carl.envs import *
 
 import torch 
 import numpy as np
-#TODO: if we want to change the center of the context distribution, 
-# we need to change the sampling method in CARL
-
 
 RLInstance = namedtuple(
     "RLInstance",
@@ -43,6 +40,7 @@ class DefaultRLGenerator(Generator[RLInstance]):
                                                     'CARLCartPoleEnv'
                                                 ]
                                             )
+
         self.context_features_pendulum: InitVar[Hyperparameter] = CategoricalHyperparameter(
             "context_features_pendulum", choices=["max_speed", "dt", "g", "m", "l"]
         )
@@ -86,6 +84,7 @@ class DefaultRLGenerator(Generator[RLInstance]):
         self.env_space = ConfigurationSpace()
         self.env_space.add_hyperparameter(self.env_type)
         self.env_space.add_hyperparameter(self.context_dist_std)
+        # self.env_space.add_hyperparameter(self.algorithm)
         
         self.pendulum_context = ConfigurationSpace()
         self.pendulum_context.add_hyperparameter(self.context_features_pendulum)

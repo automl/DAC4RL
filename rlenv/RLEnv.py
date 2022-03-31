@@ -18,7 +18,9 @@ import gym
 import sys
 import inspect
 
-from typing import Dict, Union, Optional, Type, Callable, Tuple
+import time
+
+from typing import Dict, Union, Optional, Tuple
 
 from dac4automlcomp.generator import Generator
 
@@ -28,23 +30,18 @@ sys.path.insert(0, parentdir)
 print(os.getcwd())
 
 from stable_baselines3.common.env_util import make_vec_env
-from stable_baselines3.common.vec_env.vec_normalize import VecNormalize
-from stable_baselines3.common.vec_env import SubprocVecEnv, DummyVecEnv
+from stable_baselines3.common.vec_env import DummyVecEnv
 from stable_baselines3 import DDPG, PPO, SAC
-from stable_baselines3.common.monitor import Monitor
-
 
 from carl.envs import *
 from carl.envs.carl_env import CARLEnv
 from carl.utils.json_utils import lazy_json_dump
 
-import torch as th
 import pdb
 
 import carl.training.trial_logger
 
 importlib.reload(carl.training.trial_logger)
-from carl.training.trial_logger import TrialLogger
 
 from carl.context.sampling import sample_contexts
 
@@ -58,8 +55,7 @@ class RLEnv(DACEnv[RLInstance], instance_type=RLInstance):
         device: str = "cpu",
         seed = 123456, 
         total_timesteps = 1e6,
-        n_intervals = 20,    # Should be really low for evaluations
-                
+        n_intervals = 20,    # Should be really low for evaluations                
     ):
         """
         RL Env that wraps the CARL environment and specifically allows for dynamnically setting hyperparameters 
@@ -78,84 +74,15 @@ class RLEnv(DACEnv[RLInstance], instance_type=RLInstance):
 
         self.total_timesteps = total_timesteps
         self.n_intervals = n_intervals
-        self.ref_seed = self.seed(seed)[0]
+        self.per_interval_steps = int(total_timesteps/n_intervals)
 
-        self.per_interval_steps = int(total_timesteps/n_intervals) 
-    
-        # Counter to track intervals
-        self.interval_counter = 0
         print(f'Total timesteps : {self.total_timesteps}')
         print(f'Per interval steps : {self.per_interval_steps}')
 
+        self.ref_seed = self.seed(seed)[0]      
 
-    
-    def get_env(
-        self,
-        env_name,
-        n_envs: int = 1,
-        env_kwargs: Optional[Dict] = None,
-        wrapper_class: Optional[Callable[[gym.Env], gym.Env]] = None,
-        wrapper_kwargs=None,
-        normalize_kwargs: Optional[Dict] = None,
-        agent_cls: Optional[stable_baselines3.common.base_class.BaseAlgorithm] = None,  # only important for eval env to appropriately wrap
-        eval_seed: Optional[int] = None,  # env is seeded in agent
-        return_vec_env: bool = True,
-        vec_env_cls: Optional[Type[Union[DummyVecEnv, SubprocVecEnv]]] = None,
-        return_eval_env: bool = False,
-    ) -> Union[CARLEnv, Tuple[CARLEnv]]:
-        if wrapper_kwargs is None:
-            wrapper_kwargs = {}
-        if env_kwargs is None:
-            env_kwargs = {}
-        EnvCls = partial(getattr(carl.envs, env_name), **env_kwargs)
+        self.allowed_models = ['PPO', 'DDPG', 'SAC']   
 
-        make_vec_env_kwargs = dict(
-            wrapper_class=wrapper_class,
-            vec_env_cls=vec_env_cls,
-            wrapper_kwargs=wrapper_kwargs,
-        )
-
-        # Wrap, Seed and Normalize Env
-        if return_vec_env:
-            env = make_vec_env(EnvCls, n_envs=n_envs, **make_vec_env_kwargs)
-        else:
-            env = EnvCls()
-            if wrapper_class is not None:
-                env = wrapper_class(env, **wrapper_kwargs)
-        n_eval_envs = 1
-
-        # Eval policy works with more than one eval envs, but the number of contexts/instances must be divisible
-        # by the number of eval envs without rest in order to catch all instances.
-        if return_eval_env:
-            if return_vec_env:
-                eval_env = make_vec_env(EnvCls, n_envs=n_eval_envs, **make_vec_env_kwargs)
-            else:
-                eval_env = EnvCls()
-                if wrapper_class is not None:
-                    eval_env = wrapper_class(env, **wrapper_kwargs)
-            if agent_cls is not None:
-                eval_env = agent_cls._wrap_env(eval_env)
-            else:
-                warnings.warn(
-                    "agent_cls is None. Should be provided for eval_env to ensure that the correct wrappers are used."
-                )
-            if eval_seed is not None:
-                eval_env.seed(eval_seed)  # env is seeded in agent
-
-        if normalize_kwargs is not None and normalize_kwargs["normalize"]:
-            del normalize_kwargs["normalize"]
-            env = VecNormalize(env, **normalize_kwargs)
-
-            if return_eval_env:
-                eval_normalize_kwargs = normalize_kwargs.copy()
-                eval_normalize_kwargs["norm_reward"] = False
-                eval_normalize_kwargs["training"] = False
-                eval_env = VecNormalize(eval_env, **eval_normalize_kwargs)
-
-        ret = env
-        if return_eval_env:
-            ret = (env, eval_env)
-        return ret
     
     @property
     def observation_space(self):
@@ -173,7 +100,6 @@ class RLEnv(DACEnv[RLInstance], instance_type=RLInstance):
     def _(self, instance: RLInstance):
         return instance
 
-  
     def step(self, action):
         """
         Take a step by applying a set of hyperparameters to the model,
@@ -182,46 +108,33 @@ class RLEnv(DACEnv[RLInstance], instance_type=RLInstance):
         """
         print(f'Stepping with action : {action}')
 
-        # Generate hyperparams
-        algo, hyperparams = self._set_hps(action)
-
-        agent = getattr(stable_baselines3, algo)
-
-        # Get the environment for training and evaluation
-        self.env, self.eval_env = self.get_env(
-            env_name=self.env_type,
-            n_envs=1,
-            env_kwargs=self.env_kwargs,
-            wrapper_class=None,
-            vec_env_cls=DummyVecEnv,
-            return_eval_env=True,
-            normalize_kwargs=None,
-            agent_cls=agent,
-            eval_seed=self.ref_seed,
-        )
         
-        # Create a new model 
-        model = agent(
-                        env=self.env, 
-                        verbose=1, 
-                        seed=self.ref_seed, 
-                        **hyperparams
-                    )  
+        
+
+        
+        # create the model if algorithm is specified
+        if "algorithm" in action: 
+            self.create_model(action["algorithm"])
+            action.pop("algorithm")
+
+
+
+        # Instantiate an agent
+        # apply the hyperparams to self.model
+
+        self._set_hps(action)
 
         # Train for specified timesteps per interval
-        model.learn(total_timesteps=self.per_interval_steps)
-
+        self.model.learn(total_timesteps=self.per_interval_steps)
 
         # Get episode metrics
         episode_rewards = self.env.envs[0].get_episode_rewards()
         episode_lengths = self.env.envs[0].get_episode_lengths()
 
 
-
-
         # Evaluate Policy for 100 episodes
         mean_reward, std_reward = evaluate_policy(
-                                        model = model, 
+                                        model = self.model, 
                                         env = self.eval_env, 
                                         n_eval_episodes=100,
                                         deterministic=True,
@@ -240,7 +153,6 @@ class RLEnv(DACEnv[RLInstance], instance_type=RLInstance):
         state = {
             "step": self.interval_counter,
             "std_reward" : std_reward,
-            "instance": self.current_instance,
             "episode_rewards": episode_rewards,
             "episode_lengths": episode_lengths,
         }
@@ -260,16 +172,61 @@ class RLEnv(DACEnv[RLInstance], instance_type=RLInstance):
         """
 
         hyperparams = action
-        hyperparams["policy"] = "MlpPolicy"
 
-        algo  = hyperparams['algorithm']
-        hyperparams.pop('algorithm')
+        for key in hyperparams:
+            setattr(self.model, key, hyperparams[key])
 
-        return algo, hyperparams
+    def create_model(self, algo: str):
+        """
+        Create a model based on the specified algorithm
+
+        Args:
+            algo: Algorithm name
+
+        """
+        
+        if algo not in self.allowed_models:
+            raise ValueError(f'Algorithm {algo} not allowed')
+        
+        self.algorithm = algo
+        self.agent = getattr(stable_baselines3, self.algorithm)
+        
+        if self.model_dict[algo] is not None:
+                # Load a checkpointed model if it exists 
+                self.model = self.model_dict[algo]
+        else:
+                # Create a new model otherwise
+                self.model = self.agent(
+                                env=self.env, 
+                                policy='MlpPolicy',
+                                verbose=1, 
+                                seed=self.ref_seed, 
+                            )  
+
+    
+        print(f'Selected Algorithm is {self.algorithm}')
+        
+        
+
+        # Create an eval environment for this agent
+        eval_env = make_vec_env(
+                        self.EnvCls, 
+                        n_envs=1, 
+                        vec_env_cls=DummyVecEnv
+                    )
+    
+     
+        self.eval_env = self.agent._wrap_env(eval_env)
+        
+        eval_env.seed(self.ref_seed)  # env is seeded in agent
+
+        return self.model
 
     def reset(
-        self, 
-        instance: Optional[Union[RLInstance, int]] = None
+        self,
+        algorithm: Optional[str] = None,
+        instance: Optional[Union[RLInstance, int]] = None,
+        
     ):
         """
         Reset the Instance
@@ -278,17 +235,17 @@ class RLEnv(DACEnv[RLInstance], instance_type=RLInstance):
             instance:   The instance to reset, which already includes environment and 
                         Context distribution for this instance
 
-
         """
-        print('Resetting the environment')
+       
         super().reset(instance)
         
         assert isinstance(self.current_instance, RLInstance)
-        
+       
+        # Sample environment, context_features and context_std from the instance
         (self.env_type, context_features, context_std) = self.current_instance
 
-        print(f'New Environment is {self.env_type}')
-
+        print(f'Selected Environment is {self.env_type}')
+        
         # Sample contexts based on the instance
         self.contexts = sample_contexts(
                             env_name=self.env_type, 
@@ -297,25 +254,32 @@ class RLEnv(DACEnv[RLInstance], instance_type=RLInstance):
                             default_sample_std_percentage=context_std
                         )
 
-
-        # Get training and evaluation environments
+        # Create training environments
         self.env_kwargs = dict(
             contexts=self.contexts,
-            logger=None,
             hide_context=False,
-            state_context_features="changing_context_features", # Only the features that change are appended to the state
+            state_context_features="changing_context_features", 
         )
         
-        state = {
-            "step": self.interval_counter,
-            "std_reward" : None,
-            "instance": self.current_instance,
-            "episode_rewards": None,
-            "episode_lengths": None,
-        }   
 
-        return state
+        self.EnvCls = partial(getattr(carl.envs, self.env_type), **self.env_kwargs)
 
+        self.env = make_vec_env(self.EnvCls, n_envs=1,  vec_env_cls=DummyVecEnv)
+        self.env.seed(self.ref_seed)
+        
+        # Counter to track intervals
+        self.interval_counter = 0
+
+        # Create a dictionary of allowed models
+        self.model_dict = {}
+        for key in self.allowed_models:
+            self.model_dict[key] = None
+
+        return {
+            'Env' : self.env_type, 
+            'Context_Features' : context_features,
+            'instance' : self.current_instance
+        }
 
     def seed(self, seed=None):
         """
@@ -328,24 +292,37 @@ class RLEnv(DACEnv[RLInstance], instance_type=RLInstance):
 
 if __name__ == "__main__":
     env = gym.make( "dac4carl-v0", 
-                    total_timesteps=1e2, 
-                    n_intervals=20
+                    total_timesteps=1e5, 
+                    n_intervals=10
                 )
     
     done = False
+    algo_schedule = ['PPO'] # Can even include mode algorithms, but it might depend on the environment
+
+    i = 0
+    # Uniformly apply some action that is common to all algorithms 
+
+    state = env.reset()
     while not done:
-        env.reset()
-        ppo_action = {
-            "algorithm": "PPO",
+        
+        time_start = time.time()
+        
+        algo_action = {
+            "algorithm": algo_schedule[i],
             "learning_rate": 0.0003,
             "gamma": 0.99,
-            "gae_lambda": 0.95,
-            "vf_coef": 0.5,
-            "ent_coef": 0.01,
-            "clip_range": 0.2,
         }
-        state, reward, done, _ = env.step(ppo_action)
-        
+        state, reward, done, _ = env.step(algo_action)
+
+        # algo_rewards[algo_schedule[i]].append(reward)
+
+        i = i + 1
+        if i == len(algo_schedule):
+            i = 0
+
+        print("--- %s seconds ---" % (time.time() - time_start))
+
+
 
     print(f'I\'ve got the magic stuff')
 

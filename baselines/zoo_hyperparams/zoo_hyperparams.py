@@ -52,7 +52,6 @@ class ZooHyperparams(DACPolicy):
                 "gae_lambda": 0.95,
                 "vf_coef": 0.5,
                 "ent_coef": 0.0,
-                "clip_range": 0.2,
             }
         elif env == 'CARLCartPoleEnv':
             params = {
@@ -61,7 +60,6 @@ class ZooHyperparams(DACPolicy):
                 "gae_lambda": 0.8,
                 "vf_coef": 0.5,
                 "ent_coef": 0.0,
-                "clip_range": 0.2,
             }
         elif env == 'CARLAcrobotEnv':
             params = {
@@ -70,7 +68,6 @@ class ZooHyperparams(DACPolicy):
                 "gae_lambda": 0.94,
                 "vf_coef": 0.5,
                 "ent_coef": 0.0,
-                "clip_range": 0.2,
             }
         elif env == 'CARLMountainCarContinuousEnv':
             params = {
@@ -79,7 +76,6 @@ class ZooHyperparams(DACPolicy):
                 "gae_lambda": 0.9,
                 "vf_coef": 0.19,
                 "ent_coef": 0.00429,
-                "clip_range": 0.1,
             }
         elif env == 'CARLLunarLanderEnv':
             params = {
@@ -88,13 +84,12 @@ class ZooHyperparams(DACPolicy):
                 "gae_lambda": 0.98,
                 "vf_coef": 0.5,
                 "ent_coef": 0.01,
-                "clip_range": 0.2,
             }
 
         return params
     
     
-    def act(self, state):
+    def act(self, env):
         """
         Generate an action in the form of the hyperparameters based on 
         the given instance 
@@ -108,14 +103,6 @@ class ZooHyperparams(DACPolicy):
         """
         # Get the environment from the state
         
-        
-        instance = state["instance"]
-
-        # Check for compatibility
-        assert isinstance(instance, RLInstance)
-
-        # Extract information from the instance
-        (env, context_features, context_std)= instance
 
         # Get the zoo parameters for hte environment
         zoo_params = self._get_zoo_params(env)
@@ -163,11 +150,14 @@ if __name__ == "__main__":
 
     policy = ZooHyperparams()
     env = gym.make( "dac4carl-v0", 
-                    total_timesteps=1e6, 
-                    n_intervals=20
+                    total_timesteps=1e5, 
+                    n_intervals=10
                 )
     done = False
-    state= None
+    
+    state = env.reset()
+    env_type = state['Env']
+
 
     reward_history = []
     while not done:
@@ -175,10 +165,8 @@ if __name__ == "__main__":
 
         init_time = time.time()
 
-        state = env.reset()
-
         # generate an action
-        action = policy.act(state)
+        action = policy.act(env_type)
         
         # Apply the action t get hte reward, next state and done
         state, reward, done, _ = env.step(action)
@@ -186,5 +174,7 @@ if __name__ == "__main__":
         #save the reward 
         reward_history.append(reward)
         print("--- %s seconds per instance---" % (time.time() - init_time))
+
+    print(reward_history)
 
     print("--- %s seconds ---" % (time.time() - start_time))
