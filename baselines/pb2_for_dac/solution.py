@@ -5,7 +5,9 @@ from dac4automlcomp.policy import DACPolicy
 from baselines import schedulers
 
 
-def load_solution(policy_cls=schedulers.SchedulePolicy, path=Path("tmp", "saved_configs")) -> DACPolicy:
+def load_solution(
+    policy_cls=schedulers.SchedulePolicy, path=Path("tmp", "saved_configs")
+) -> DACPolicy:
     """
     Load Solution.
     Serves as an entry point for the competition evaluation.

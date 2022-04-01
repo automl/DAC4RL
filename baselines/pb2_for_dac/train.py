@@ -1,9 +1,9 @@
 import argparse
 from pathlib import Path
-import json 
+import json
 
-#import gym
-#from DAC4RL import rlenv
+# import gym
+# from DAC4RL import rlenv
 from DAC4RL.baselines import schedulers
 
 import ray
@@ -15,6 +15,7 @@ from ray.tune.examples.pbt_function import pbt_function
 def evaluate_cost(cfg, checkpoint_dir=None):
     import gym
     from DAC4RL import rlenv
+
     global args
     global logdir
     train_env = gym.make("dac4carl-v0")
@@ -31,26 +32,28 @@ def evaluate_cost(cfg, checkpoint_dir=None):
                 algorithm = "DDPG"
 
             if algorithm == "PPO":
-                action = {"algorithm": algorithm,
-                  "learning_rate": float(cfg["learning_rate"]),
-                  "gamma": float(cfg["gamma"]),
-                  #"gae_lambda": float(cfg["gae_lambda"]),
-                  "vf_coef": float(cfg["vf_coef"]),
-                  "ent_coef": float(cfg["ent_coef"]),
-                  "clip_range": float(cfg["clip_range"])
-                  }
+                action = {
+                    "algorithm": algorithm,
+                    "learning_rate": float(cfg["learning_rate"]),
+                    "gamma": float(cfg["gamma"]),
+                    # "gae_lambda": float(cfg["gae_lambda"]),
+                    "vf_coef": float(cfg["vf_coef"]),
+                    "ent_coef": float(cfg["ent_coef"]),
+                    "clip_range": float(cfg["clip_range"]),
+                }
             else:
-                action = {"algorithm": algorithm,
-                  "learning_rate": float(cfg["learning_rate"]),
-                  "buffer_size": int(cfg["buffer_size"]),
-                  "learning_starts": int(cfg["learning_starts"]),
-                  "batch_size": int(cfg["batch_size"]),
-                  "tau": float(cfg["tau"]),
-                  "gamma": float(cfg["gamma"]),
-                  "train_freq": int(cfg["train_freq"]),
-                  "gradient_steps": int(cfg["gradient_steps"]),
-                  }
-            try: 
+                action = {
+                    "algorithm": algorithm,
+                    "learning_rate": float(cfg["learning_rate"]),
+                    "buffer_size": int(cfg["buffer_size"]),
+                    "learning_starts": int(cfg["learning_starts"]),
+                    "batch_size": int(cfg["batch_size"]),
+                    "tau": float(cfg["tau"]),
+                    "gamma": float(cfg["gamma"]),
+                    "train_freq": int(cfg["train_freq"]),
+                    "gradient_steps": int(cfg["gradient_steps"]),
+                }
+            try:
                 obs, reward, done, _ = train_env.step(action)
                 trial_id = tune.get_trial_id()
                 config = cfg.copy()
@@ -69,7 +72,7 @@ def evaluate_cost(cfg, checkpoint_dir=None):
                 with open(f"{logdir}/trial_{trial_id}.jsonl", "a+") as f:
                     f.write(json.dumps(config))
                     f.write("\n")
-                tune.report(reward=reward)#{"mean_reward": reward}
+                tune.report(reward=reward)  # {"mean_reward": reward}
             except:
                 done = True
                 tune.report(reward=-50000)
@@ -77,12 +80,25 @@ def evaluate_cost(cfg, checkpoint_dir=None):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser = argparse.ArgumentParser(
-        description="Run PB2 for AutoRL"
+    parser = argparse.ArgumentParser(description="Run PB2 for AutoRL")
+    parser.add_argument(
+        "--n_instances",
+        type=int,
+        default=1000,
+        help="Number of instances in training environment",
     )
-    parser.add_argument("--n_instances", type=int, default=1000, help="Number of instances in training environment")
-    parser.add_argument("--env_seed", type=int, default=42, help="Random seed for the training environment")
-    parser.add_argument("--outdir", type=str, default="tmp", help="Directory where to save trained models and logs.")
+    parser.add_argument(
+        "--env_seed",
+        type=int,
+        default=42,
+        help="Random seed for the training environment",
+    )
+    parser.add_argument(
+        "--outdir",
+        type=str,
+        default="tmp",
+        help="Directory where to save trained models and logs.",
+    )
     args, _ = parser.parse_known_args()
 
     logdir = Path(f"{args.outdir}/pb2_seed{args.env_seed}")
@@ -105,7 +121,8 @@ if __name__ == "__main__":
             "tau": [0.0001, 1.0],
             "train_freq": [1.0, 10000.0],
             "gradient_steps": [-1.0, 1000.0],
-        })
+        },
+    )
 
     analysis = tune.run(
         evaluate_cost,
@@ -133,7 +150,8 @@ if __name__ == "__main__":
             "tau": 0.1,
             "train_freq": 1.0,
             "gradient_steps": -1.0,
-        })
+        },
+    )
 
     print("Best hyperparameters found were: ", analysis.best_config)
 
@@ -163,7 +181,7 @@ if __name__ == "__main__":
     hyperparams["gradient_steps"] = [t["gradient_steps"] for t in schedule]
     hyperparams["buffer_sizes"] = [t["buffer_size"] for t in schedule]
     policy = schedulers.SchedulePolicy(**hyperparams)
-    
+
     config_save_dir = logdir / "saved_configs"
     config_save_dir.mkdir(parents=True, exist_ok=True)
     policy.save(config_save_dir)

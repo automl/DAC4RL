@@ -1,14 +1,12 @@
 from setuptools import setup
 
-packages = [
-    "dac4rl"
-]
+packages = ["dac4rl"]
 
 package_data = {"": ["*"]}
 
 AUTHORS = (
     ", ".join(
-        [            
+        [
             "Raghu Rajan",
             "Aditya Mohan",
             "Theresa Eimer",
@@ -21,7 +19,7 @@ AUTHOR_EMAIL = (
         [
             "rajanr@cs.uni-freiburg.de",
             "mohan@tnt.uni-hannover.de",
-            "eimer@tnt.uni-hannover.de"
+            "eimer@tnt.uni-hannover.de",
         ]
     ),
 )
@@ -35,7 +33,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 setup(
     name="dac4rl",
     version="0.0.1",
-    package_dir={'carl': 'carl'},
+    package_dir={"carl": "carl"},
     author=AUTHORS,
     author_email=AUTHOR_EMAIL,
     description="A python package for the DAC4RL competition",
@@ -60,32 +58,27 @@ setup(
     python_requires=">=3.9",
     setup_requires=[""],
     install_requires=[
-            "gym>=0.18.3", 
-            "scipy>=1.7.0",
-            "ConfigArgParse>=1.5.1",
-            "numpy>=1.19.5",
-            "pandas>=1.3.0",
-            "matplotlib>=3.4.2",
-            "optuna>=2.9.1",
-            "dataclasses>=0.6",
-            "numpyencoder>=0.3.0",
-            "pyglet>=1.5.15",
-            "pytablewriter>=0.62.0",
-            "PyYAML>=5.4.1",
-            "tabulate>=0.8.9",
-            "box2d-py>=2.3.5",
-            "sb3_contrib>=1.4.0",
-            "stable_baselines3>=1.1.0",
-
+        "gym>=0.18.3",
+        "scipy>=1.7.0",
+        "ConfigArgParse>=1.5.1",
+        "numpy>=1.19.5",
+        "pandas>=1.3.0",
+        "matplotlib>=3.4.2",
+        "optuna>=2.9.1",
+        "dataclasses>=0.6",
+        "numpyencoder>=0.3.0",
+        "pyglet>=1.5.15",
+        "pytablewriter>=0.62.0",
+        "PyYAML>=5.4.1",
+        "tabulate>=0.8.9",
+        "box2d-py>=2.3.5",
+        "sb3_contrib>=1.4.0",
+        "stable_baselines3>=1.1.0",
     ],
     extras_require={
-       'baselines' : [
+        "baselines": [
             "ray[tune]>=1.1.0",
-
-       ],
-       'experiments' : [
-            "seaborn>=0.11.1",
-            "tensorflow>=2.5.0"
-       ],
+        ],
+        "experiments": ["seaborn>=0.11.1", "tensorflow>=2.5.0"],
     },
 )

@@ -4,7 +4,11 @@ from typing import List, Union
 
 import numpy as np
 from ConfigSpace.configuration_space import ConfigurationSpace
-from ConfigSpace.hyperparameters import UniformFloatHyperparameter, UniformIntegerHyperparameter, CategoricalHyperparameter
+from ConfigSpace.hyperparameters import (
+    UniformFloatHyperparameter,
+    UniformIntegerHyperparameter,
+    CategoricalHyperparameter,
+)
 from dac4automlcomp.policy import DACPolicy, DeterministicPolicy
 
 
@@ -59,25 +63,27 @@ class ConstantPolicy(Configurable, Serializable, DeterministicPolicy, DACPolicy)
 
     def act(self, _):
         if self.algorithm == "PPO":
-            action = {"algorithm": self.algorithm,
-                      "learning_rate": self.learning_rate,
-                      "gamma": self.gamma,
-                      "gae_lambda": self.gae_lambda,
-                      "vf_coef": self.vf_coef,
-                      "ent_coef": self.ent_coef,
-                      "clip_range": self.clip_range
-                      }
+            action = {
+                "algorithm": self.algorithm,
+                "learning_rate": self.learning_rate,
+                "gamma": self.gamma,
+                "gae_lambda": self.gae_lambda,
+                "vf_coef": self.vf_coef,
+                "ent_coef": self.ent_coef,
+                "clip_range": self.clip_range,
+            }
         else:
-            action = {"algorithm": self.algorithm,
-                      "learning_rate": self.learning_rate,
-                      "buffer_size": self.buffer_size,
-                      "learning_starts": self.learning_starts,
-                      "batch_size": self.batch_size,
-                      "tau": self.tau,
-                      "gamma": self.gamma,
-                      "train_freq": self.train_freq,
-                      "gradient_steps": self.gradient_steps,
-                      }
+            action = {
+                "algorithm": self.algorithm,
+                "learning_rate": self.learning_rate,
+                "buffer_size": self.buffer_size,
+                "learning_starts": self.learning_starts,
+                "batch_size": self.batch_size,
+                "tau": self.tau,
+                "gamma": self.gamma,
+                "train_freq": self.train_freq,
+                "gradient_steps": self.gradient_steps,
+            }
         return action
 
     def reset(self, instance):
@@ -87,7 +93,9 @@ class ConstantPolicy(Configurable, Serializable, DeterministicPolicy, DACPolicy)
     def config_space():
         cs = ConfigurationSpace()
         cs.add_hyperparameter(
-            UniformFloatHyperparameter("learning_rate", lower=0.000001, upper=10, log=True)
+            UniformFloatHyperparameter(
+                "learning_rate", lower=0.000001, upper=10, log=True
+            )
         )
         cs.add_hyperparameter(
             UniformFloatHyperparameter("gamma", lower=0.000001, upper=1.0)
@@ -104,9 +112,7 @@ class ConstantPolicy(Configurable, Serializable, DeterministicPolicy, DACPolicy)
         cs.add_hyperparameter(
             UniformFloatHyperparameter("clip_range", lower=0.0, upper=1.0)
         )
-        cs.add_hyperparameter(
-            UniformFloatHyperparameter("tau", lower=0.0, upper=1.0)
-        )
+        cs.add_hyperparameter(UniformFloatHyperparameter("tau", lower=0.0, upper=1.0))
         cs.add_hyperparameter(
             UniformIntegerHyperparameter("buffer_size", lower=1000, upper=1e8)
         )
@@ -149,25 +155,27 @@ class SchedulePolicy(Configurable, Serializable, DeterministicPolicy, DACPolicy)
             self.t += 1
 
         if self.algorithm == "PPO":
-            action = {"algorithm": self.algorithm,
-                      "learning_rate": self.learning_rates[self.t],
-                      "gamma": self.gammas[self.t],
-                      "gae_lambda": self.gae_lambdas[self.t],
-                      "vf_coef": self.vf_coefs[self.t],
-                      "ent_coef": self.ent_coefs[self.t],
-                      "clip_range": self.clip_ranges[self.t]
-                      }
+            action = {
+                "algorithm": self.algorithm,
+                "learning_rate": self.learning_rates[self.t],
+                "gamma": self.gammas[self.t],
+                "gae_lambda": self.gae_lambdas[self.t],
+                "vf_coef": self.vf_coefs[self.t],
+                "ent_coef": self.ent_coefs[self.t],
+                "clip_range": self.clip_ranges[self.t],
+            }
         else:
-            action = {"algorithm": self.algorithm,
-                      "learning_rate": self.learning_rates[self.t],
-                      "buffer_size": self.buffer_sizes[self.t],
-                      "learning_starts": self.learning_starts[self.t],
-                      "batch_size": self.batch_sizes[self.t],
-                      "tau": self.taus[self.t],
-                      "gamma": self.gammas[self.t],
-                      "train_freq": self.train_freqs[self.t],
-                      "gradient_steps": self.gradient_steps[self.t],
-                      }
+            action = {
+                "algorithm": self.algorithm,
+                "learning_rate": self.learning_rates[self.t],
+                "buffer_size": self.buffer_sizes[self.t],
+                "learning_starts": self.learning_starts[self.t],
+                "batch_size": self.batch_sizes[self.t],
+                "tau": self.taus[self.t],
+                "gamma": self.gammas[self.t],
+                "train_freq": self.train_freqs[self.t],
+                "gradient_steps": self.gradient_steps[self.t],
+            }
         return action
 
     def reset(self, instance):
@@ -177,7 +185,9 @@ class SchedulePolicy(Configurable, Serializable, DeterministicPolicy, DACPolicy)
     def config_space():
         cs = ConfigurationSpace()
         cs.add_hyperparameter(
-            UniformFloatHyperparameter("learning_rate", lower=0.000001, upper=10, log=True)
+            UniformFloatHyperparameter(
+                "learning_rate", lower=0.000001, upper=10, log=True
+            )
         )
         cs.add_hyperparameter(
             UniformFloatHyperparameter("gamma", lower=0.000001, upper=1.0)
@@ -194,9 +204,7 @@ class SchedulePolicy(Configurable, Serializable, DeterministicPolicy, DACPolicy)
         cs.add_hyperparameter(
             UniformFloatHyperparameter("clip_range", lower=0.0, upper=1.0)
         )
-        cs.add_hyperparameter(
-            UniformFloatHyperparameter("tau", lower=0.0, upper=1.0)
-        )
+        cs.add_hyperparameter(UniformFloatHyperparameter("tau", lower=0.0, upper=1.0))
         cs.add_hyperparameter(
             UniformIntegerHyperparameter("buffer_size", lower=1000, upper=1e8)
         )
@@ -216,4 +224,3 @@ class SchedulePolicy(Configurable, Serializable, DeterministicPolicy, DACPolicy)
             CategoricalHyperparameter("algorithm", choices=["PPO", "SAC", "DDPG"])
         )
         return cs
-

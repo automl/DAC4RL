@@ -234,7 +234,6 @@ class CARLEnv(Wrapper):
                     ]
                 )
 
-
             state = np.concatenate((state, context_values))
 
         return state
@@ -303,8 +302,6 @@ class CARLEnv(Wrapper):
             )
 
         return getattr(self.env, name)
-
-
 
     def _progress_instance(self):
         """
@@ -436,7 +433,6 @@ class CARLEnv(Wrapper):
                     context_lower_bounds = context_lower_bounds[ids]
                     context_upper_bounds = context_upper_bounds[ids]
 
-
                 low = np.concatenate((env_lower_bounds, context_lower_bounds))
                 high = np.concatenate((env_upper_bounds, context_upper_bounds))
 
@@ -447,7 +443,6 @@ class CARLEnv(Wrapper):
             self.observation_space = (
                 self.env.observation_space
             )  # make sure it is the same object
-
 
     def _update_context(self):
         """

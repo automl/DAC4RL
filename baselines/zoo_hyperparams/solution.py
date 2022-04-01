@@ -5,7 +5,9 @@ from dac4automlcomp.policy import DACPolicy
 import zoo_hyperparams
 
 
-def load_solution(policy_cls=zoo_hyperparams.ZooHyperparams, path=Path("tmp", "saved_configs")) -> DACPolicy:
+def load_solution(
+    policy_cls=zoo_hyperparams.ZooHyperparams, path=Path("tmp", "saved_configs")
+) -> DACPolicy:
     """
     Load Solution.
     Serves as an entry point for the competition evaluation.
@@ -17,4 +19,4 @@ def load_solution(policy_cls=zoo_hyperparams.ZooHyperparams, path=Path("tmp", "s
     -------
     DACPolicy
     """
-    return policy_cls() 
+    return policy_cls()

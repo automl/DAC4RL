@@ -9,6 +9,7 @@ from stable_baselines3.common.logger import configure
 
 ## TODO update for DAC
 
+
 class TrialLogger(object):
     """
     Holds all train arguments and sets up logging directory and stables baselines
@@ -116,8 +117,7 @@ class TrialLogger(object):
         """
         output_file_paths = [str(self.trial_setup_fn)]
         self.parser.write_config_file(
-            parsed_namespace=self.trial_setup_args, 
-            output_file_paths=output_file_paths
+            parsed_namespace=self.trial_setup_args, output_file_paths=output_file_paths
         )
 
     def write_context(self, episode: int, step: int, context: Dict[Any, Any]):
