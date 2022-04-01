@@ -48,13 +48,15 @@ from carl.context.sampling import sample_contexts
 
 from rlenv.generators import DefaultRLGenerator, RLInstance
 
-
+# TODO Check the sampling frequency for contexts
 class RLEnv(DACEnv[RLInstance], instance_type=RLInstance):
     def __init__(
         self,
         generator: Generator[RLInstance] = DefaultRLGenerator(),
         device: str = "cpu",
         seed=123456,
+        total_timesteps = 1e5,
+        n_epochs = 10
     ):
         """
         RL Env that wraps the CARL environment and specifically allows for dynamnically setting hyperparameters
@@ -71,19 +73,20 @@ class RLEnv(DACEnv[RLInstance], instance_type=RLInstance):
         super().__init__(generator)
         self.device = device
 
-        # The total time for which a schedule is allowed to train on 
-        # a sampled environment is divided into epochs of training. Thus, 
-        # the hyperparameters are reset after each epoch
-        self.total_timesteps = 1e5
-        self.n_epochs = 10
-        self.per_epoch_steps = int(self.total_timesteps / self.n_epochs)
-
-        print(f"Total timesteps : {self.total_timesteps}")
-        print(f"Per epoch steps : {self.per_epoch_steps}")
+        self.total_timesteps = total_timesteps
+        self.n_epochs = n_epochs
 
         self.ref_seed = self.seed(seed)[0]
 
         self.allowed_models = ["PPO", "DDPG", "SAC"]
+
+        self.env_multipliers = {
+            "CARLPendulumEnv": 0.6,
+            "CARLAcrobotEnv" : 0.3,
+            "CARLMountainCarContinuousEnv": 0.3 ,
+            "CARLLunarLanderEnv" : 1,
+            "CARLCartPoleEnv" : 0.3
+        }
 
     @property
     def observation_space(self):
@@ -210,19 +213,29 @@ class RLEnv(DACEnv[RLInstance], instance_type=RLInstance):
         """
 
         super().reset(instance)
-
+        
         assert isinstance(self.current_instance, RLInstance)
+
 
         # Sample environment, context_features and context_std from the instance
         (self.env_type, context_features, context_std) = self.current_instance
 
-        print(f"Selected Environment is {self.env_type}")
+        # The total time for which a schedule is allowed to train on 
+        # a sampled environment is divided into epochs of training. Thus, 
+        # the hyperparameters are reset after each epoch
+        
+        # Set the total number of timesteps based on the environment
+        self.total_timesteps = self.env_multipliers[self.env_type] * self.total_timesteps
+        self.per_epoch_steps = int(self.total_timesteps / self.n_epochs)
 
-        # Sample contexts based on the instance
+        print(f"Selected Environment is {self.env_type}")
+        print(f"Total timesteps : {self.total_timesteps}")
+
+        # Sample 1 context based on the instance
         self.contexts = sample_contexts(
             env_name=self.env_type,
             context_feature_args=context_features,
-            num_contexts=100,
+            num_contexts=1,
             default_sample_std_percentage=context_std,
         )
 
@@ -246,11 +259,14 @@ class RLEnv(DACEnv[RLInstance], instance_type=RLInstance):
         for key in self.allowed_models:
             self.model_dict[key] = None
 
-        return {
-            "Env": self.env_type,
-            "Context_Features": context_features,
-            "instance": self.current_instance,
+        ret = {
+            "env": self.env_type,
+            "context_features": context_features,
+            "context_values" : self.contexts,
+            "context_std": context_std,
         }
+
+        return 
 
     def seed(self, seed=None):
         """
@@ -319,5 +335,3 @@ if __name__ == "__main__":
         print("--- %s seconds ---" % (time.time() - time_start))
 
     print(reward_history)
-
-    print(f"I've got the magic stuff")

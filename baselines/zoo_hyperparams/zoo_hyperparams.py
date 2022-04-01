@@ -159,7 +159,7 @@ if __name__ == "__main__":
     done = False
 
     state = env.reset()
-    env_type = state["Env"]
+    env_type = state["env"]
 
     reward_history = []
     while not done:
