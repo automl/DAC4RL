@@ -225,11 +225,11 @@ class RLEnv(DACEnv[RLInstance], instance_type=RLInstance):
         # the hyperparameters are reset after each epoch
         
         # Set the total number of timesteps based on the environment
-        self.total_timesteps = self.env_multipliers[self.env_type] * self.total_timesteps
-        self.per_epoch_steps = int(self.total_timesteps / self.n_epochs)
+        total_timesteps = self.env_multipliers[self.env_type] * self.total_timesteps
+        self.per_epoch_steps = int(total_timesteps / self.n_epochs)
 
         print(f"Selected Environment is {self.env_type}")
-        print(f"Total timesteps : {self.total_timesteps}")
+        print(f"Total timesteps : {total_timesteps}")
 
         # Sample 1 context based on the instance
         self.contexts = sample_contexts(
