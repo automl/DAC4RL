@@ -148,20 +148,6 @@ class RLEnv(DACEnv[RLInstance], instance_type=RLInstance):
 
         return state, mean_reward, done, {}
 
-    def _set_hps(self, action: Dict):
-        """
-        Set the hyperparameters based on the action
-
-        Args:
-            action: Dict of hyperparameters (Exhaustive list for all algorithms)
-
-        Returns:
-            algo: Algorithm name
-            hyperparams: Dict of hyperparameters
-        """
-
-        hyperparams = action
-
     def create_model(self, action):
         """
         Create a model based on the specified algorithm
