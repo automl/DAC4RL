@@ -96,7 +96,7 @@ class ZooHyperparams(DACPolicy):
 
         return params
 
-    def act(self, env):
+    def act(self, obs):
         """
         Generate an action in the form of the hyperparameters based on
         the given instance
@@ -111,7 +111,7 @@ class ZooHyperparams(DACPolicy):
         # Get the environment from the state
 
         # Get the zoo parameters for hte environment
-        zoo_params = self._get_zoo_params(env)
+        zoo_params = self._get_zoo_params(self.env)
 
         # Create the action dictionary
         action = {"algorithm": self.algorithm}
@@ -132,7 +132,7 @@ class ZooHyperparams(DACPolicy):
         Args:
             instance: The problem instance the target algorithm to be configured is currently solving
         """
-        pass
+        self.env = instance.env_type
 
     def seed(self, seed):
         """Sets random state of the policy.
