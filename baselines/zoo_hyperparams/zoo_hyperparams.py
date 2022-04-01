@@ -155,7 +155,7 @@ if __name__ == "__main__":
     start_time = time.time()
 
     policy = ZooHyperparams()
-    env = gym.make("dac4carl-v0", total_timesteps=1e5, n_intervals=10)
+    env = gym.make("dac4carl-v0")
     done = False
 
     state = env.reset()

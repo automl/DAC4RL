@@ -55,8 +55,6 @@ class RLEnv(DACEnv[RLInstance], instance_type=RLInstance):
         generator: Generator[RLInstance] = DefaultRLGenerator(),
         device: str = "cpu",
         seed=123456,
-        total_timesteps=1e6,
-        n_intervals=20,  # Should be really low for evaluations
     ):
         """
         RL Env that wraps the CARL environment and specifically allows for dynamnically setting hyperparameters
@@ -67,18 +65,21 @@ class RLEnv(DACEnv[RLInstance], instance_type=RLInstance):
             device: Device to use for the agent
             seed: Seed for the environment
             total_timesteps: Total number of timesteps to train for
-            n_instances: Number of instances to train for
+            n_epochs: Number of instances to train for
         """
 
         super().__init__(generator)
         self.device = device
 
-        self.total_timesteps = total_timesteps
-        self.n_intervals = n_intervals
-        self.per_interval_steps = int(total_timesteps / n_intervals)
+        # The total time for which a schedule is allowed to train on 
+        # a sampled environment is divided into epochs of training. Thus, 
+        # the hyperparameters are reset after each epoch
+        self.total_timesteps = 1e5
+        self.n_epochs = 10
+        self.per_epoch_steps = int(self.total_timesteps / self.n_epochs)
 
         print(f"Total timesteps : {self.total_timesteps}")
-        print(f"Per interval steps : {self.per_interval_steps}")
+        print(f"Per epoch steps : {self.per_epoch_steps}")
 
         self.ref_seed = self.seed(seed)[0]
 
@@ -111,8 +112,8 @@ class RLEnv(DACEnv[RLInstance], instance_type=RLInstance):
         # create the model based on the action
         self.create_model(action)
 
-        # Train for specified timesteps per interval
-        self.model.learn(total_timesteps=self.per_interval_steps)
+        # Train for specified timesteps per epoch
+        self.model.learn(total_timesteps=self.per_epoch_steps)
 
         # Get episode metrics
         episode_rewards = self.env.envs[0].get_episode_rewards()
@@ -130,17 +131,17 @@ class RLEnv(DACEnv[RLInstance], instance_type=RLInstance):
         # Update the trained model in the model_dict
         self.model_dict[self.algorithm] = self.model
 
-        if self.interval_counter == self.n_intervals:
+        if self.epoch_counter == self.n_epochs:
             done = True
         else:
             done = False
-            self.interval_counter += 1
+            self.epoch_counter += 1
 
         print(f"Done : {done}")
-        print(f"Interval counter : {self.interval_counter}")
+        print(f"epoch counter : {self.epoch_counter}")
 
         state = {
-            "step": self.interval_counter,
+            "step": self.epoch_counter,
             "std_reward": std_reward,
             "episode_rewards": episode_rewards,
             "episode_lengths": episode_lengths,
@@ -150,7 +151,7 @@ class RLEnv(DACEnv[RLInstance], instance_type=RLInstance):
 
     def create_model(self, action):
         """
-        Create a model based on the specified algorithm
+        Create a model based on the specified algorithm and hyperparameters
 
         Args:
             algo: Algorithm name
@@ -237,8 +238,8 @@ class RLEnv(DACEnv[RLInstance], instance_type=RLInstance):
         self.env = make_vec_env(self.EnvCls, n_envs=1, vec_env_cls=DummyVecEnv)
         self.env.seed(self.ref_seed)
 
-        # Counter to track intervals
-        self.interval_counter = 0
+        # Counter to track epochs
+        self.epoch_counter = 0
 
         # Create a dictionary of allowed models
         self.model_dict = {}
@@ -261,7 +262,7 @@ class RLEnv(DACEnv[RLInstance], instance_type=RLInstance):
 
 
 if __name__ == "__main__":
-    env = gym.make("dac4carl-v0", total_timesteps=1e5, n_intervals=10)
+    env = gym.make("dac4carl-v0")
 
     done = False
     algo_schedule = [
@@ -275,7 +276,7 @@ if __name__ == "__main__":
 
     # Some parameters can only be set at the start,
     # since the model makes them into a schedule. Thus,
-    # they need to be removed after the first interval
+    # they need to be removed after the first epoch
     flag = True
 
     algo_action = {
@@ -294,7 +295,7 @@ if __name__ == "__main__":
     while not done:
 
         # Add the algorithms to the hyperparams to
-        # be used in the next interval
+        # be used in the next epoch
         algo_action["algorithm"] = algo_schedule[i]
 
         time_start = time.time()
