@@ -266,7 +266,7 @@ class RLEnv(DACEnv[RLInstance], instance_type=RLInstance):
             "context_std": context_std,
         }
 
-        return 
+        return ret
 
     def seed(self, seed=None):
         """
