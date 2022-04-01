@@ -134,11 +134,13 @@ class RLEnv(DACEnv[RLInstance], instance_type=RLInstance):
         # Update the trained model in the model_dict
         self.model_dict[self.algorithm] = self.model
 
+        self.epoch_counter += 1
+
         if self.epoch_counter == self.n_epochs:
             done = True
         else:
             done = False
-            self.epoch_counter += 1
+            
 
         print(f"Done : {done}")
         print(f"epoch counter : {self.epoch_counter}")
