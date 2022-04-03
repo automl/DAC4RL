@@ -1,0 +1,121 @@
+\documentclass[11pt, final]{article}
+
+% This file will be kept up-to-date at the following GitHub repository:
+%
+% https://github.com/automl-conf/LatexTemplate
+%
+% Please file any issues/bug reports, etc. you may have at:
+%
+% https://github.com/automl-conf/LatexTemplate/issues
+
+\usepackage{microtype} % microtypography
+\usepackage{booktabs}  % tables
+\usepackage{url}  % url
+
+
+% AMS math
+\usepackage{amsmath}
+\usepackage{amsthm}
+
+% With no package options, the submission will be anonymized, the supplemental
+% material will be suppressed, and line numbers will be added to the manuscript.
+%
+% To hide the supplementary material (e.g., for the first submission deadline),
+% use the [hidesupplement] option:
+%
+% \usepackage[hidesupplement]{automl}
+%
+% To compile a non-anonymized camera-ready version, add the [final] option:
+%
+% \usepackage[final]{automl}
+%
+% or
+%
+% \usepackage[final, hidesupplement]{automl}
+
+\usepackage[hidesupplement]{automl}
+
+% You may use any reference style as long as you are consistent throughout the
+% document. As a default we suggest author--year citations; for bibtex and
+% natbib you may use:
+
+\usepackage{natbib}
+\bibliographystyle{apalike}
+
+% and for biber and biblatex you may use:
+
+% \usepackage[%
+%   backend=biber,
+%   style=authoryear-comp,
+%   sortcites=true,
+%   natbib=true,
+%   giveninits=true,
+%   maxcitenames=2,
+%   doi=false,
+%   url=true,
+%   isbn=false,
+%   dashed=false
+% ]{biblatex}
+% \addbibresource{...}
+
+\title{Example: Resetting constant parameters based on the selected environment}
+
+% The syntax for adding an author is
+%
+% \author[i]{\nameemail{author name}{author email}}
+%
+% where i is an affiliation counter. Authors may have
+% multiple affiliations; e.g.:
+%
+% \author[1,2]{\nameemail{Anonymous}{anonymous@example.com}}
+
+\author[1,2]{\nameemail{Aditya Mohan}{}}
+
+% the list might continue:
+% \author[2,3]{\nameemail{Author 2}{email2@example.com}}
+% \author[3]{\nameemail{Author 3}{email3@example.com}}
+% \author[4]{\nameemail{Author 4}{email4@example.com}}
+
+% if you need to force a linebreak in the author list, prepend an \author entry
+% with \\:
+
+% \author[3]{\\\nameemail{Author 5}{email5@example.com}}
+
+% Specify corresponding affiliations after authors, referring to counter used in
+% \author:
+
+\affil[1]{Leibniz University Hannover}
+\affil[2]{\url{https://www.AutoML.org}}
+
+% the list might continue:
+% \affil[2]{Institution 2}
+% \affil[3]{Institution 3}
+% \affil[4]{Institution 4}
+
+% define PDF metadata, please fill in to aid in accessibility of the resulting PDF
+\hypersetup{%
+  pdfauthor={}, % will be reset to "Anonymous" unless the "final" package option is given
+  pdftitle={},
+  pdfsubject={},
+  pdfkeywords={}
+}
+
+\begin{document}
+
+\maketitle
+
+\paragraph{Method}
+In this example, we set the parameters of a Reinforcement Learning agent that trains using Proximal Policy Optimization \cite{schulman2017proximal} based on the environment that is presented to the agent. The parameters are based on the default values defined in RL Baselines3 Zoo \cite{rl-zoo} for the given environment. The assumption is that the default parameters, which are supposed to perform well in the vanilla environments, could provide competitive performance on simpler environments without a lot of degradation in performance, when the original environment is modified by changing certain features with a small deviation around their default. 
+
+The changing features of the environment are called contexts, and the resulting environment is a variation of the same environment, both belonging to the same class of Contextual MDPs \cite{hallak2015contextual}. The algorithm implementation used in this example is from  \texttt{stable-baselines3}~\citep{stable-baselines3}, and it is trained for a total of trained it for $1O^{5}$ steps. This training time is divided into $10$ epochs, each of $10000$ steps, where all other parameters of the agent are constantly reset to the same values, as defined in zoo. Additionally, the tests were performed in a setting where 2 context features were varied at the same time with a standard deviation of $0.5$ around the mean values. However, once sampled, these were kept fixed throughout the training time.
+
+
+\paragraph{Limitations}
+The biggest limitation of this approach is that it does not perform uniformly well across the instance due to the hyperparameters remaining static. While the agent is still able to solve the easier environments, it struggles heavily with the more complicated ones even though the hyperparameters are supposed to be optimal. Thus, going for a more dynamic approach of configuring hyperparmeters using Dynamic Algorithm Configuration (DAC) \cite{biedenkapp2020dynamic} can potentially alleviate this issue.
+
+\paragraph{Reproducibility}
+We provide the code and the command to reproduce the model in \texttt{README.md}. The runs take approximately 55-75 seconds per instance.
+
+
+\bibliography{references}
+\end{document}
