@@ -23,14 +23,14 @@ env = gym.make("dac4carl-v0", total_timesteps = 1e3, n_epochs = n_epochs)
 env.seed(123)
 obs = env.reset()
 done = False
-        
+
 print("Environment of sampled instance set to: ", env.current_instance.env_type)
 
 for i in range(n_epochs):
 
     # Create an action dict containing the algorithm to apply along with its hyperparameter configuration:
     action = {'algorithm': 'PPO', 'learning_rate': 0.001, 'gamma': 0.98, 'gae_lambda': 0.8, 'ent_coef': 0.0, 'n_steps': 32, 'n_epochs': 10, 'batch_size': 256}
-    
+
     # Apply the desired hyperparameter configs:
     obs, reward, done, info = env.step(action)
 
@@ -46,7 +46,7 @@ The Bash script [`prepare_upload.sh`](https://github.com/automl/dac4automlcomp/b
 bash prepare_upload.sh <submission_dir>
 ```
 
-To create a submission, please follow the guidelines [here](https://codalab.lisn.upsaclay.fr/competitions/3640#learn_the_details-evaluation). 
+To create a submission, please follow the guidelines [here](https://codalab.lisn.upsaclay.fr/competitions/3727#learn_the_details-evaluation).
 
 ## Evaluating Submissions Locally
 [`evaluate_submission.sh`](https://github.com/automl/dac4automlcomp/blob/main/evaluate_submission.sh) can be used to evaluate submissions locally. For example, you can execute the following commands to evaluate an example baseline (the argument `n` specifies the number of problem instances):
@@ -69,5 +69,4 @@ docker run -it -u root raghuspacerajan/dac4automlpy39:latest bash
 It is not a requirement to use the Docker container to run your local evaluations, but it will be easier for us to debug any issues that may arise when you try evaluating submissions for the competition if you do so inside the provided Docker container.
 
 ## Discussion Forum
-The discussion forum is hosted at: https://codalab.lisn.upsaclay.fr/forums/3640/
-
+The discussion forum is hosted at: https://codalab.lisn.upsaclay.fr/forums/3727/
