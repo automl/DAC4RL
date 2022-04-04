@@ -11,6 +11,32 @@ cd DAC4RL
 pip install -e .
 ```
 
+## Basic Usage
+
+```python
+import gym
+import rlenv
+
+# Create an (outer) env to perform DAC with 3,000 inner env steps and 2 reconfiguration points:
+n_epochs = 2
+env = gym.make("dac4carl-v0", total_timesteps = 1e3, n_epochs = n_epochs)
+env.seed(123)
+obs = env.reset()
+done = False
+        
+print("Environment of sampled instance set to: ", env.current_instance.env_type)
+
+for i in range(n_epochs):
+
+    # Create an action dict containing the algorithm to apply along with its hyperparameter configuration:
+    action = {'algorithm': 'PPO', 'learning_rate': 0.001, 'gamma': 0.98, 'gae_lambda': 0.8, 'ent_coef': 0.0, 'n_steps': 32, 'n_epochs': 10, 'batch_size': 256}
+    
+    # Apply the desired hyperparameter configs:
+    obs, reward, done, info = env.step(action)
+
+    # obs, reward, done, info = env.step(env.action_space.sample())
+```
+
 ## Sample Submissions
 The directory `baselines` contains sample submissions with [sample code files](baselines/) and an optional [`requirements.txt`](baselines/zoo_hyperparams/requirements.txt) which can contain additional Python packages to be installed *during* an evaluation.
 
@@ -23,7 +49,7 @@ bash prepare_upload.sh <submission_dir>
 To create a submission, please follow the guidelines [here](https://codalab.lisn.upsaclay.fr/competitions/3640#learn_the_details-evaluation). 
 
 ## Evaluating Submissions Locally
-[`evaluate_submission.sh`](https://github.com/automl/dac4automlcomp/blob/main/evaluate_submission.sh) can be used to evaluate submissions locally. For example, you can execute the following commands to evaluate example baseline (the argument `n` specifies the number of problem instances):
+[`evaluate_submission.sh`](https://github.com/automl/dac4automlcomp/blob/main/evaluate_submission.sh) can be used to evaluate submissions locally. For example, you can execute the following commands to evaluate an example baseline (the argument `n` specifies the number of problem instances):
 
 ```
 bash evaluate_submission.sh -s ../DAC4RL/baselines/zoo_hyperparams/ -t dac4rl -n 25
