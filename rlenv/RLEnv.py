@@ -81,10 +81,10 @@ class RLEnv(DACEnv[RLInstance], instance_type=RLInstance):
         self.allowed_models = ["PPO", "DDPG", "SAC"]
 
         self.env_multipliers = {
-            "CARLPendulumEnv": 0.6,
+            "CARLPendulumEnv": 0.3, # 0.6
             "CARLAcrobotEnv" : 0.3,
             "CARLMountainCarContinuousEnv": 0.3 ,
-            "CARLLunarLanderEnv" : 1,
+            "CARLLunarLanderEnv" : 0.3, # 1.0
             "CARLCartPoleEnv" : 0.3
         }
 
