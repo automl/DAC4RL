@@ -22,13 +22,10 @@ bash prepare_upload.sh <submission_dir>
 To create a submission, please follow the guidelines [here](https://codalab.lisn.upsaclay.fr/competitions/3640#learn_the_details-evaluation). 
 
 ## Evaluating Submissions Locally
-[`evaluate_submission.sh`](https://github.com/automl/dac4automlcomp/blob/main/evaluate_submission.sh) can be used to evaluate submissions locally. For example, you can execute the following commands to evaluate example baselines from the DAC4RL and DAC4SGD tracks (where `n` specifies the number of problem instances):
+[`evaluate_submission.sh`](https://github.com/automl/dac4automlcomp/blob/main/evaluate_submission.sh) can be used to evaluate submissions locally. For example, you can execute the following commands to evaluate example baseline (the argument `n` specifies the number of problem instances):
 
 ```
-# DAC4RL track
 bash evaluate_submission.sh -s ../DAC4RL/baselines/zoo_hyperparams/ -t dac4rl -n 25
-# DAC4SGD track
-bash evaluate_submission.sh -s ../DAC4SGD/examples/ac_for_dac/ -t dac4sgd -n 80
 ```
 
 NOTE: Please note that if you want to evaluate the experiments in the same runtime environment as the competition servers, you would additionally need to set up the docker container below.
