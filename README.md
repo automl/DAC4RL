@@ -8,6 +8,7 @@ cd dac4automlcomp
 pip install -e .
 git clone git@github.com:automl/DAC4RL.git
 cd DAC4RL
+pip install -e .
 ```
 
 ## Sample Submissions
