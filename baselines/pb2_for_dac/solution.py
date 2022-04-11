@@ -53,7 +53,7 @@ class SchedulePolicy(Configurable, Serializable, DeterministicPolicy, DACPolicy)
                 "batch_size": self.batch_sizes[min(self.t, len(self.batch_sizes)-1)],
                 "tau": self.taus[min(self.t, len(self.taus)-1)],
                 "gamma": self.gammas[min(self.t, len(self.gammas)-1)],
-                "train_freq": self.train_freqs[min(self.t, len(self.train_freqs)-1)],
+                "train_freq": (self.train_freqs[min(self.t, len(self.train_freqs)-1)], "episode"),
                 "gradient_steps": self.gradient_steps[min(self.t, len(self.gradient_steps)-1)],
             }
         return action
