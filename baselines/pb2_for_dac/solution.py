@@ -44,7 +44,7 @@ class SchedulePolicy(Configurable, Serializable, DeterministicPolicy, DACPolicy)
                 "ent_coef": self.ent_coefs[min(self.t, len(ent_coefs)-1)],
                 "clip_range": self.clip_ranges[min(self.t, len(self.clip_ranges)-1)],
             }
-            if self.t > 1:
+            if self.t > 0:
                 del action["clip_range"]
         else:
             action = {
@@ -58,8 +58,9 @@ class SchedulePolicy(Configurable, Serializable, DeterministicPolicy, DACPolicy)
                 "train_freq": self.train_freqs[min(self.t, len(self.train_freqs)-1)],
                 "gradient_steps": self.gradient_steps[min(self.t, len(self.gradient_steps)-1)],
             }
-            if self.t > 1:
+            if self.t > 0:
                 del action["train_freq"]
+
         return action
 
     def reset(self, instance):
