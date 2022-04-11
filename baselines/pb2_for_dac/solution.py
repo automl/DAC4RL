@@ -44,7 +44,7 @@ class SchedulePolicy(Configurable, Serializable, DeterministicPolicy, DACPolicy)
                 "ent_coef": self.ent_coefs[min(self.t, len(ent_coefs)-1)],
                 "clip_range": self.clip_ranges[min(self.t, len(self.clip_ranges)-1)],
             }
-            if self.t > 1
+            if self.t > 1:
                 del action["clip_range"]
         else:
             action = {
