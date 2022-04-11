@@ -6,7 +6,7 @@ from baselines import schedulers
 
 
 def load_solution(
-    policy_cls=schedulers.SchedulePolicy, path=Path("tmp", "saved_configs")
+    policy_cls=schedulers.SchedulePolicy, path=Path("logs", "pb2_seed0", "saved_configs")
 ) -> DACPolicy:
     """
     Load Solution.
