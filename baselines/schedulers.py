@@ -151,30 +151,30 @@ class SchedulePolicy(Configurable, Serializable, DeterministicPolicy, DACPolicy)
     gradient_steps: List[int]
 
     def act(self, state):
-        if t < len(self.learning_rates):
+        if self.t < len(self.learning_rates):
             self.t += 1
 
         if self.algorithm == "PPO":
             action = {
                 "algorithm": self.algorithm,
-                "learning_rate": self.learning_rates[self.t],
-                "gamma": self.gammas[self.t],
-                "gae_lambda": self.gae_lambdas[self.t],
-                "vf_coef": self.vf_coefs[self.t],
-                "ent_coef": self.ent_coefs[self.t],
-                "clip_range": self.clip_ranges[self.t],
+                "learning_rate": self.learning_rates[min(self.t, len(self.learning_rates)-1)],
+                "gamma": self.gammas[min(self.t, len(self.gammas)-1)],
+                "gae_lambda": self.gae_lambdas[min(self.t, len(self.gae_lambdas)-1)],
+                "vf_coef": self.vf_coefs[min(self.t, len(vf_coefs)-1)],
+                "ent_coef": self.ent_coefs[min(self.t, len(ent_coefs)-1)],
+                "clip_range": self.clip_ranges[min(self.t, len(self.clip_ranges)-1)],
             }
         else:
             action = {
                 "algorithm": self.algorithm,
-                "learning_rate": self.learning_rates[self.t],
-                "buffer_size": self.buffer_sizes[self.t],
-                "learning_starts": self.learning_starts[self.t],
-                "batch_size": self.batch_sizes[self.t],
-                "tau": self.taus[self.t],
-                "gamma": self.gammas[self.t],
-                "train_freq": self.train_freqs[self.t],
-                "gradient_steps": self.gradient_steps[self.t],
+                "learning_rate": self.learning_rates[min(self.t, len(self.learning_rates)-1)],
+                "buffer_size": self.buffer_sizes[min(self.t, len(self.buffer_sizes)-1)],
+                "learning_starts": self.learning_starts[min(self.t, len(self.learning_starts)-1)],
+                "batch_size": self.batch_sizes[min(self.t, len(self.batch_sizes)-1)],
+                "tau": self.taus[min(self.t, len(self.taus)-1)],
+                "gamma": self.gammas[min(self.t, len(self.gammas)-1)],
+                "train_freq": self.train_freqs[min(self.t, len(self.train_freqs)-1)],
+                "gradient_steps": self.gradient_steps[min(self.t, len(self.gradient_steps)-1)],
             }
         return action
 
