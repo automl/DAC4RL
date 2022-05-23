@@ -11,7 +11,7 @@ from ConfigSpace.hyperparameters import (
     CategoricalHyperparameter,
 )
 from dac4automlcomp.policy import DACPolicy, DeterministicPolicy
-from baselines.schedulers import Configurable, Serializable
+from DAC4RL.baselines.schedulers import Configurable, Serializable
 
 
 @dataclasses.dataclass
@@ -128,7 +128,7 @@ class MultiSchedulePolicy(Configurable, Serializable, DeterministicPolicy, DACPo
 
 
 def load_solution(
-    policy_cls=SchedulePolicy, path=Path(".")
+    policy_cls=MultiSchedulePolicy, path=Path(".")
 ) -> DACPolicy:
     """
     Load Solution.

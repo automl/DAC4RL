@@ -2,8 +2,6 @@ import argparse
 from pathlib import Path
 import json
 
-# import gym
-# from DAC4RL import rlenv
 from DAC4RL.baselines.pb2_piac_for_dac.solution import MultiSchedulePolicy
 
 import ray
@@ -20,7 +18,7 @@ def evaluate_env(cfg, checkpoint_dir=None):
     global logdir
     train_env = gym.make("dac4carl-v0")
     train_env.seed(args.env_seed)
-    state = None
+    state = {"env": None}
     while not state["env"] == cfg["env"]:
         state = train_env.reset()
 
@@ -32,7 +30,7 @@ def evaluate_env(cfg, checkpoint_dir=None):
             algorithm = "SAC"
         else:
             algorithm = "DDPG"
-
+        algorithm = "PPO"
         if algorithm == "PPO":
             action = {
                 "algorithm": algorithm,
@@ -41,10 +39,11 @@ def evaluate_env(cfg, checkpoint_dir=None):
                 # "gae_lambda": float(cfg["gae_lambda"]),
                 "vf_coef": float(cfg["vf_coef"]),
                 "ent_coef": float(cfg["ent_coef"]),
-                "clip_range": float(cfg["clip_range"]),
+                #"clip_range": float(cfg["clip_range"]),
                 }
         else:
             action = {
+                "algorithm": algorithm,
                 "learning_rate": float(cfg["learning_rate"]),
                 "buffer_size": int(cfg["buffer_size"]),
                 "learning_starts": int(cfg["learning_starts"]),
@@ -54,28 +53,30 @@ def evaluate_env(cfg, checkpoint_dir=None):
                 "train_freq": int(cfg["train_freq"]),
                 "gradient_steps": int(cfg["gradient_steps"]),
             }
-        try:
-            obs, reward, done, _ = train_env.step(action)
-            trial_id = tune.get_trial_id()
-            config = cfg.copy()
-            config["learning_starts"] = int(cfg["learning_starts"])
-            config["buffer_size"] = int(cfg["buffer_size"])
-            config["batch_size"] = int(cfg["batch_size"])
-            config["train_freq"] = int(cfg["train_freq"])
-            config["gradient_steps"] = int(cfg["gradient_steps"])
-            config["tau"] = float(cfg["tau"])
-            config["gae_lambda"] = float(cfg["gae_lambda"])
-            config["cf_coef"] = float(cfg["vf_coef"])
-            config["ent_coef"] = float(cfg["ent_coef"])
-            config["clip_range"] = float(cfg["clip_range"])
+        
+        obs, reward, done, _ = train_env.step(action)
+        trial_id = tune.get_trial_id()
+        config = {}#cfg.copy()
+        config["algorithm"] = int(round(cfg["algorithm"]))
+        config["learning_rate"] = float(cfg["learning_rate"])
+        config["gamma"] = float(cfg["gamma"])
+        config["learning_starts"] = int(cfg["learning_starts"])
+        config["buffer_size"] = int(cfg["buffer_size"])
+        config["batch_size"] = int(cfg["batch_size"])
+        config["train_freq"] = int(cfg["train_freq"])
+        config["gradient_steps"] = int(cfg["gradient_steps"])
+        config["tau"] = float(cfg["tau"])
+        config["gae_lambda"] = float(cfg["gae_lambda"])
+        config["vf_coef"] = float(cfg["vf_coef"])
+        config["ent_coef"] = float(cfg["ent_coef"])
+        config["clip_range"] = float(cfg["clip_range"])
 
-            with open(f"{logdir}/trial_{trial_id}.jsonl", "a+") as f:
-                f.write(json.dumps(config))
-                f.write("\n")
-            tune.report(reward=reward)  # {"mean_reward": reward}
-        except:
-            done = True
-            tune.report(reward=-50000)
+        with open(f"{logdir}/trial_{trial_id}.jsonl", "a+") as f:
+            print(config)
+
+            f.write(json.dumps(config))
+            f.write("\n")
+        tune.report(reward=reward)  # {"mean_reward": reward}
 
 
 if __name__ == "__main__":
@@ -104,7 +105,7 @@ if __name__ == "__main__":
     logdir = Path(f"{args.outdir}/pb2_seed{args.env_seed}")
     logdir.mkdir(parents=True, exist_ok=True)
 
-    envs = ['CARLPendulumEnv', 'CARLAcrobotEnv', 'CARLMountainCarContinuousEnv', 'CARLLunarLanderEnv', 'CARLCartPoleEnv',]
+    envs = ['CARLLunarLanderEnv']#['CARLPendulumEnv', 'CARLAcrobotEnv', 'CARLMountainCarContinuousEnv', 'CARLLunarLanderEnv', 'CARLCartPoleEnv',]
     analyses = []
     for env in envs:
         pbt = PB2(
@@ -140,7 +141,7 @@ if __name__ == "__main__":
             num_samples=8,
             fail_fast=True,
             config={
-                "instance": env,
+                "env": env,
                 "algorithm": 0.0,
                 "learning_rate": 0.0001,
                 "gamma": 0.9,
@@ -158,7 +159,10 @@ if __name__ == "__main__":
         )
         analyses.append(analysis)
 
-    schedules = []
+    hyperparams = {"algorithms": [], "learning_rates": [], "gammas": [], "gae_lambdas": [], "taus": [], "ent_coefs": [],
+            "vf_coefs": [], "clip_ranges": [], "batch_sizes": [], "learning_starts": [], "train_freqs": [], 
+            "gradient_steps": [], "buffer_sizes": []}
+    hyperparams["env_list"] = envs
     for analysis in analyses:
         results = analysis.dataframe()
         best_process = analysis.best_dataframe["trial_id"].values[0]
@@ -166,28 +170,26 @@ if __name__ == "__main__":
         with open(f"{logdir}/trial_{best_process}.jsonl", "r") as f:
             line = f.readline()
             schedule.append(json.loads(line))
-        hyperparams = {}
         if schedule[0]["algorithm"] == 0:
-            hyperparams["algorithm"] = "PPO"
+            hyperparams["algorithms"].append("PPO")
         elif schedule[0]["algorithm"] == 1:
-            hyperparams["algorithm"] = "SAC"
+            hyperparams["algorithms"].append("SAC")
         else:
-            hyperparams["algorithm"] = "DDPG"
-        hyperparams["learning_rates"] = [t["learning_rate"] for t in schedule]
-        hyperparams["gammas"] = [t["gamma"] for t in schedule]
-        hyperparams["gae_lambdas"] = [t["gae_lambda"] for t in schedule]
-        hyperparams["vf_coefs"] = [t["vf_coef"] for t in schedule]
-        hyperparams["ent_coefs"] = [t["ent_coef"] for t in schedule]
-        hyperparams["clip_ranges"] = [t["clip_range"] for t in schedule]
-        hyperparams["batch_sizes"] = [t["batch_size"] for t in schedule]
-        hyperparams["taus"] = [t["tau"] for t in schedule]
-        hyperparams["learning_starts"] = [t["learning_starts"] for t in schedule]
-        hyperparams["train_freqs"] = [t["train_freq"] for t in schedule]
-        hyperparams["gradient_steps"] = [t["gradient_steps"] for t in schedule]
-        hyperparams["buffer_sizes"] = [t["buffer_size"] for t in schedule]
-        schedules.append(hyperparams)
+            hyperparams["algorithms"].append("DDPG")
+        hyperparams["learning_rates"].append([t["learning_rate"] for t in schedule])
+        hyperparams["gammas"].append([t["gamma"] for t in schedule])
+        hyperparams["gae_lambdas"].append([t["gae_lambda"] for t in schedule])
+        hyperparams["vf_coefs"].append([t["vf_coef"] for t in schedule])
+        hyperparams["ent_coefs"].append([t["ent_coef"] for t in schedule])
+        hyperparams["clip_ranges"].append([t["clip_range"] for t in schedule])
+        hyperparams["batch_sizes"].append([t["batch_size"] for t in schedule])
+        hyperparams["taus"].append([t["tau"] for t in schedule])
+        hyperparams["learning_starts"].append([t["learning_starts"] for t in schedule])
+        hyperparams["train_freqs"].append([t["train_freq"] for t in schedule])
+        hyperparams["gradient_steps"].append([t["gradient_steps"] for t in schedule])
+        hyperparams["buffer_sizes"].append([t["buffer_size"] for t in schedule])
 
-    policy = MultiSchedulePolicy(**schedules)
+    policy = MultiSchedulePolicy(**hyperparams)
 
     config_save_dir = logdir / "saved_configs"
     config_save_dir.mkdir(parents=True, exist_ok=True)
