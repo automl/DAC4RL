@@ -12,7 +12,7 @@ from ray.tune.schedulers.pb2 import PB2
 from ray.tune.examples.pbt_function import pbt_function
 
 
-def evaluate_env_1(cfg, checkpoint_dir=None):
+def evaluate_env(cfg, checkpoint_dir=None):
     import gym
     from DAC4RL import rlenv
 
@@ -20,8 +20,10 @@ def evaluate_env_1(cfg, checkpoint_dir=None):
     global logdir
     train_env = gym.make("dac4carl-v0")
     train_env.seed(args.env_seed)
-    #TODO: set instance from config
-    train_env.reset()
+    state = None
+    while not state["env"] == cfg["env"]:
+        state = train_env.reset()
+
     done = False
     while not done:
         if round(cfg["algorithm"]) == 0:
@@ -102,10 +104,9 @@ if __name__ == "__main__":
     logdir = Path(f"{args.outdir}/pb2_seed{args.env_seed}")
     logdir.mkdir(parents=True, exist_ok=True)
 
-    #TODO: set instances
-    instances = []
+    envs = ['CARLPendulumEnv', 'CARLAcrobotEnv', 'CARLMountainCarContinuousEnv', 'CARLLunarLanderEnv', 'CARLCartPoleEnv',]
     analyses = []
-    for instance in instances:
+    for env in envs:
         pbt = PB2(
             time_attr="training_iteration",
             perturbation_interval=1,
@@ -127,7 +128,7 @@ if __name__ == "__main__":
         )
 
         analysis = tune.run(
-            evaluate_cost,
+            evaluate_env,
             name="pb2_baseline",
             scheduler=pbt,
             metric="reward",
@@ -139,7 +140,7 @@ if __name__ == "__main__":
             num_samples=8,
             fail_fast=True,
             config={
-                "instance": instance
+                "instance": env,
                 "algorithm": 0.0,
                 "learning_rate": 0.0001,
                 "gamma": 0.9,

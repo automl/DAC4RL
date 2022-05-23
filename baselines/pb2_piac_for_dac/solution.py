@@ -16,6 +16,7 @@ from baselines.schedulers import Configurable, Serializable
 
 @dataclasses.dataclass
 class MultiSchedulePolicy(Configurable, Serializable, DeterministicPolicy, DACPolicy):
+    env_list: List[str]
     algorithms: List[str]
     learning_rates: List[List[float]]
     gammas: List[List[float]]
@@ -78,8 +79,7 @@ class MultiSchedulePolicy(Configurable, Serializable, DeterministicPolicy, DACPo
         return action
 
     def reset(self, instance):
-        #TODO: get instance id
-        self.instance = 0
+        self.instance = self.env_list.index(instance["env"])
         self.t = 0
 
     @staticmethod
