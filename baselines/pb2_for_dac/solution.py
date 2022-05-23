@@ -60,11 +60,16 @@ class SchedulePolicy(Configurable, Serializable, DeterministicPolicy, DACPolicy)
             }
             if self.t > 0:
                 del action["train_freq"]
-
+        if self.discrete:
+            action = {"algorithm": "PPO"}
         return action
 
     def reset(self, instance):
         self.t = 0
+        if instance[0] in ['CARLLunarLanderEnv', 'CARLCartPoleEnv', 'CARLAcrobotEnv']:
+            self.discrete = True
+        else:
+            self.discrete = False
 
     @staticmethod
     def config_space():

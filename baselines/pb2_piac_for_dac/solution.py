@@ -15,48 +15,62 @@ from baselines.schedulers import Configurable, Serializable
 
 
 @dataclasses.dataclass
-class SchedulePolicy(Configurable, Serializable, DeterministicPolicy, DACPolicy):
-    algorithm: str
-    learning_rates: List[float]
-    gammas: List[float]
-    gae_lambdas: List[float]
-    vf_coefs: List[float]
-    ent_coefs: List[float]
-    clip_ranges: List[float]
-    buffer_sizes: List[int]
-    learning_starts: List[int]
-    batch_sizes: List[int]
-    taus: List[float]
-    train_freqs: List[int]
-    gradient_steps: List[int]
+class MultiSchedulePolicy(Configurable, Serializable, DeterministicPolicy, DACPolicy):
+    algorithms: List[str]
+    learning_rates: List[List[float]]
+    gammas: List[List[float]]
+    gae_lambdas: List[List[float]]
+    vf_coefs: List[List[float]]
+    ent_coefs: List[List[float]]
+    clip_ranges: List[List[float]]
+    buffer_sizes: List[List[int]]
+    learning_starts: List[List[int]]
+    batch_sizes: List[List[int]]
+    taus: List[List[float]]
+    train_freqs: List[List[int]]
+    gradient_steps: List[List[int]]
 
     def act(self, state):
-        if self.t < len(self.learning_rates):
+        algorithm = self.algorithms[self.instance]
+        learning_rates = self.learning_rates[self.instance]
+        gammas = self.gammas[self.instance]
+        gae_lambdas = self.gae_lambdas[self.instance]
+        vf_coefs = self.vf_coefs[self.instance]
+        ent_coefs = self.ent_coefs[self.instance]
+        clip_ranges = self.clip_ranges[self.instance]
+        buffer_sizes = self.buffer_sizes[self.instance]
+        learning_starts = self.learning_starts[self.instance]
+        batch_sizes = self.batch_sizes[self.instance]
+        taus = self.taus[self.instance]
+        train_freqs = self.train_freqs[self.instance]
+        gradient_steps = self.gradient_steps[self.instance]
+
+        if self.t < len(learning_rates):
             self.t += 1
 
         if self.algorithm == "PPO":
             action = {
-                "algorithm": self.algorithm,
-                "learning_rate": self.learning_rates[min(self.t, len(self.learning_rates)-1)],
-                "gamma": self.gammas[min(self.t, len(self.gammas)-1)],
-                "gae_lambda": self.gae_lambdas[min(self.t, len(self.gae_lambdas)-1)],
-                "vf_coef": self.vf_coefs[min(self.t, len(vf_coefs)-1)],
-                "ent_coef": self.ent_coefs[min(self.t, len(ent_coefs)-1)],
-                "clip_range": self.clip_ranges[min(self.t, len(self.clip_ranges)-1)],
+                "algorithm": algorithm,
+                "learning_rate": learning_rates[min(self.t, len(learning_rates)-1)],
+                "gamma": gammas[min(self.t, len(gammas)-1)],
+                "gae_lambda": gae_lambdas[min(self.t, len(gae_lambdas)-1)],
+                "vf_coef": vf_coefs[min(self.t, len(vf_coefs)-1)],
+                "ent_coef": ent_coefs[min(self.t, len(ent_coefs)-1)],
+                "clip_range": clip_ranges[min(self.t, len(clip_ranges)-1)],
             }
             if self.t > 0:
                 del action["clip_range"]
         else:
             action = {
-                "algorithm": self.algorithm,
-                "learning_rate": self.learning_rates[min(self.t, len(self.learning_rates)-1)],
-                "buffer_size": self.buffer_sizes[min(self.t, len(self.buffer_sizes)-1)],
-                "learning_starts": self.learning_starts[min(self.t, len(self.learning_starts)-1)],
-                "batch_size": self.batch_sizes[min(self.t, len(self.batch_sizes)-1)],
-                "tau": self.taus[min(self.t, len(self.taus)-1)],
-                "gamma": self.gammas[min(self.t, len(self.gammas)-1)],
-                "train_freq": self.train_freqs[min(self.t, len(self.train_freqs)-1)],
-                "gradient_steps": self.gradient_steps[min(self.t, len(self.gradient_steps)-1)],
+                "algorithm": algorithm,
+                "learning_rate": learning_rates[min(self.t, len(learning_rates)-1)],
+                "buffer_size": buffer_sizes[min(self.t, len(buffer_sizes)-1)],
+                "learning_starts": learning_starts[min(self.t, len(learning_starts)-1)],
+                "batch_size": batch_sizes[min(self.t, len(batch_sizes)-1)],
+                "tau": taus[min(self.t, len(taus)-1)],
+                "gamma": gammas[min(self.t, len(gammas)-1)],
+                "train_freq": train_freqs[min(self.t, len(train_freqs)-1)],
+                "gradient_steps": gradient_steps[min(self.t, len(gradient_steps)-1)],
             }
             if self.t > 0:
                 del action["train_freq"]
@@ -64,6 +78,8 @@ class SchedulePolicy(Configurable, Serializable, DeterministicPolicy, DACPolicy)
         return action
 
     def reset(self, instance):
+        #TODO: get instance id
+        self.instance = 0
         self.t = 0
 
     @staticmethod

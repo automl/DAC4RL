@@ -58,7 +58,7 @@
 % ]{biblatex}
 % \addbibresource{...}
 
-\title{Example: Using a Hyperparameter Schedule by Population Based Bandits (Parker-Holder et al., 2020)}
+\title{Example: Using a Per-Instance Hyperparameter Schedule by Population Based Bandits (Parker-Holder et al., 2020)}
 
 % The syntax for adding an author is
 %
@@ -105,17 +105,17 @@
 \maketitle
 
 \paragraph{Method}
-For this example, we use the Population-Based Bandits (PB2) method to find a hyperparameter schedule and submit the best found one.
+For this example, we use the Population-Based Bandits (PB2) method to find a hyperparameter schedule for each environment separately.
+Ideally this will be much easier for PB2 than to switch to another environment during a run.
 PB2 maintains a population of agents (in our example 8) which are tuned during a single run.
 After every environment step, PB2's internal model perturbs the hyperparameter settings of the agents in order to find a dynamic schedule.
-As we want to cover all environments, we repeat this process for five episodes.
 
 \paragraph{Limitations}
-PB2 has not been tested across multiple environments before, so it is an open questions whether the method generalizes.
-Furthermore, our configuration space is comparatively large for the number of agents feasible on our computing budget.
+Our configuration space is comparatively large for the number of agents feasible on our computing budget.
+Additionally, we have to run PB2 for each instances separately, making this less feasible in a practical setting than a single PB2 run on all environments.
 
 \paragraph{Reproducibility}
-We provide the code and the command to reproduce the model in \texttt{README.md}.
+We provide the code and command to reproduce the model in \texttt{README.md}.
 
 
 \bibliography{references}
