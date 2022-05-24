@@ -53,8 +53,11 @@ def evaluate_env(cfg, checkpoint_dir=None):
                 "train_freq": int(cfg["train_freq"]),
                 "gradient_steps": int(cfg["gradient_steps"]),
             }
-        
-        obs, reward, done, _ = train_env.step(action)
+       
+        try:
+            obs, reward, done, _ = train_env.step(action)
+        except:
+            obs, reward, done = None, -50000, True
         trial_id = tune.get_trial_id()
         config = {}#cfg.copy()
         config["algorithm"] = int(round(cfg["algorithm"]))
@@ -105,7 +108,7 @@ if __name__ == "__main__":
     logdir = Path(f"{args.outdir}/pb2_seed{args.env_seed}")
     logdir.mkdir(parents=True, exist_ok=True)
 
-    envs = ['CARLLunarLanderEnv']#['CARLPendulumEnv', 'CARLAcrobotEnv', 'CARLMountainCarContinuousEnv', 'CARLLunarLanderEnv', 'CARLCartPoleEnv',]
+    envs = ['CARLPendulumEnv', 'CARLAcrobotEnv', 'CARLMountainCarContinuousEnv', 'CARLLunarLanderEnv', 'CARLCartPoleEnv',]
     analyses = []
     for env in envs:
         pbt = PB2(
