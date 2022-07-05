@@ -78,9 +78,6 @@ class RLEnv(DACEnv[RLInstance], instance_type=RLInstance):
 
         self.ref_seed = self.seed(seed)[0]
 
-        torch.manual_seed(seed)
-        torch.cuda.manual_seed(seed)
-        torch.cuda.manual_seed_all(seed)
         np.random.seed(seed)
 
         self.allowed_models = ["PPO", "DDPG", "SAC"]
@@ -152,9 +149,9 @@ class RLEnv(DACEnv[RLInstance], instance_type=RLInstance):
 
         state = {
             "step": self.epoch_counter,
-            "std_reward": std_reward,
-            "episode_rewards": episode_rewards,
-            "episode_lengths": episode_lengths,
+            "eval_std_reward": std_reward,
+            "train_episode_rewards": episode_rewards,
+            "train_episode_lengths": episode_lengths,
         }
 
         return state, mean_reward, done, {}
