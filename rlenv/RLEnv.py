@@ -248,6 +248,7 @@ class RLEnv(DACEnv[RLInstance], instance_type=RLInstance):
             contexts=self.contexts,
             hide_context=False,
             state_context_features="changing_context_features",
+            add_gaussian_noise_to_context=False,
         )
 
         self.EnvCls = partial(getattr(carl.envs, self.env_type), **self.env_kwargs)
