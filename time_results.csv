@@ -1,0 +1,3 @@
+DDPG,CARLPendulumEnv,SUCESS
+PPO,CARLPendulumEnv,SUCESS
+SAC,CARLPendulumEnv,SUCESS

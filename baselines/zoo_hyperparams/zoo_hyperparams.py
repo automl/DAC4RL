@@ -159,7 +159,12 @@ if __name__ == "__main__":
     done = False
 
     state = env.reset()
+
     env_type = state["env"]
+    policy.env = env_type
+    
+    print(policy.env)
+    pdb.set_trace()
 
     reward_history = []
     while not done:

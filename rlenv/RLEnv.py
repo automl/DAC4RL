@@ -78,6 +78,10 @@ class RLEnv(DACEnv[RLInstance], instance_type=RLInstance):
 
         self.ref_seed = self.seed(seed)[0]
 
+        torch.manual_seed(seed)
+        torch.cuda.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
+
         self.allowed_models = ["PPO", "DDPG", "SAC"]
 
         self.env_multipliers = {
