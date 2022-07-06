@@ -337,7 +337,7 @@ class CARLEnv(Wrapper):
                     context_augmented[key] = add_gaussian_noise(
                         default_value=value,
                         percentage_std=self.gaussian_noise_std_percentage,
-                        random_generator=None,  # self.np_random TODO discuss this
+                        random_generator=None,  # self.np_random TODO discuss this  # Does not respect CONTEXT_BOUNDS rules in carl_cartpole.py; has no reproducibility; do we really want to make it compulsory to change context after every episode?
                     )
                 else:
                     context_augmented[key] = context[

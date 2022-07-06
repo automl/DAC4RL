@@ -10,7 +10,6 @@ from rlenv.generators import DefaultRLGenerator, RLInstance
 from carl.envs import *
 
 import gym
-import pdb
 
 import time
 
@@ -159,7 +158,9 @@ if __name__ == "__main__":
     done = False
 
     state = env.reset()
+
     env_type = state["env"]
+    policy.env = env_type
 
     reward_history = []
     while not done:

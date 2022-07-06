@@ -78,6 +78,8 @@ class RLEnv(DACEnv[RLInstance], instance_type=RLInstance):
 
         self.ref_seed = self.seed(seed)[0]
 
+        np.random.seed(seed)
+
         self.allowed_models = ["PPO", "DDPG", "SAC"]
 
         self.env_multipliers = {
@@ -147,9 +149,9 @@ class RLEnv(DACEnv[RLInstance], instance_type=RLInstance):
 
         state = {
             "step": self.epoch_counter,
-            "std_reward": std_reward,
-            "episode_rewards": episode_rewards,
-            "episode_lengths": episode_lengths,
+            "eval_std_reward": std_reward,
+            "train_episode_rewards": episode_rewards,
+            "train_episode_lengths": episode_lengths,
         }
 
         return state, mean_reward, done, {}
@@ -246,6 +248,7 @@ class RLEnv(DACEnv[RLInstance], instance_type=RLInstance):
             contexts=self.contexts,
             hide_context=False,
             state_context_features="changing_context_features",
+            add_gaussian_noise_to_context=False,
         )
 
         self.EnvCls = partial(getattr(carl.envs, self.env_type), **self.env_kwargs)
